@@ -26,8 +26,7 @@ python -m torch.distributed.launch --nproc_per_node=4 --master_port=10001 run_qa
  --metric_for_best_model f1 \
  --warmup_steps 1000 \
  --weight_decay 0.01 \
- --fp16 \
- --sharded_ddp 
+ --fp16
 
 # # Pretraining on MRQA small dataset
 # python -m torch.distributed.launch --nproc_per_node=4 --master_port=10001 run_qa.py \
