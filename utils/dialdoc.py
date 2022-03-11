@@ -25,7 +25,7 @@ import os
 import datasets
 
 MAX_Q_LEN = 100  # Max length of question
-YOUR_LOCAL_DOWNLOAD = "../dataset"  # For subtask1, Doc2Dial v1.0.1 is already included in the folder "data".
+YOUR_LOCAL_DOWNLOAD = "dataset"  # For subtask1, Doc2Dial v1.0.1 is already included in the folder "data".
 
 _CITATION = """\
 @inproceedings{feng-etal-2020-doc2dial,
