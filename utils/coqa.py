@@ -68,13 +68,18 @@ class Coqa(datasets.GeneratorBasedBuilder):
             name="coqa_rc",
             version=VERSION,
             description="Load CoQA dataset for machine reading comprehension tasks",
+        ),
+        datasets.BuilderConfig(
+            name="coqa_rc_test",
+            version=VERSION,
+            description="Load CoQA dataset for machine reading comprehension tasks",
         )
     ]
 
     DEFAULT_CONFIG_NAME = "coqa_rc"
 
     def _info(self):
-        if self.config.name == "coqa_rc":
+        if self.config.name == "coqa_rc" or self.config.name == "coqa_rc_test" :
             features = datasets.Features(
                 {
                     "id": datasets.Value("string"),
@@ -112,6 +117,25 @@ class Coqa(datasets.GeneratorBasedBuilder):
                     gen_kwargs={
                         "filepath": os.path.join(
                             data_dir, "coqa/coqa-dev-v1.0.json"
+                        ),
+                    },
+                ),
+                datasets.SplitGenerator(
+                    name=datasets.Split.TRAIN,
+                    gen_kwargs={
+                        "filepath": os.path.join(
+                            data_dir, "coqa/coqa-train-v1.0.json"
+                        ),
+                    },
+                ),
+            ]
+        elif self.config.name == "coqa_rc_test":
+            return [
+                datasets.SplitGenerator(
+                    name=datasets.Split.VALIDATION,
+                    gen_kwargs={
+                        "filepath": os.path.join(
+                            data_dir, "coqa/coqa-test-v1.0.json"
                         ),
                     },
                 ),
