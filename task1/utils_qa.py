@@ -136,7 +136,9 @@ def postprocess_qa_predictions(
                         start_index >= len(offset_mapping)
                         or end_index >= len(offset_mapping)
                         or offset_mapping[start_index] is None
-                        or offset_mapping[end_index] is None
+                        or offset_mapping[start_index] == []
+                        or offset_mapping[end_index] is None 
+                        or offset_mapping[end_index] == []
                     ):
                         continue
                     # Don't consider answers with a length that is either < 0 or > max_answer_length.
@@ -146,17 +148,15 @@ def postprocess_qa_predictions(
                     # provided).
                     if token_is_max_context is not None and not token_is_max_context.get(str(start_index), False):
                         continue
-                    try:
-                        prelim_predictions.append(
-                            {
-                                "offsets": (offset_mapping[start_index][0], offset_mapping[end_index][1]),
-                                "score": start_logits[start_index] + end_logits[end_index],
-                                "start_logit": start_logits[start_index],
-                                "end_logit": end_logits[end_index],
-                            }
-                        )
-                    except:
-                        print("HERE")
+                    prelim_predictions.append(
+                        {
+                            "offsets": (offset_mapping[start_index][0], offset_mapping[end_index][1]),
+                            "score": start_logits[start_index] + end_logits[end_index],
+                            "start_logit": start_logits[start_index],
+                            "end_logit": end_logits[end_index],
+                        }
+                    )
+
         if version_2_with_negative:
             # Add the minimum null prediction
             prelim_predictions.append(min_null_prediction)
