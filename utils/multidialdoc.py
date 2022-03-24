@@ -247,6 +247,7 @@ class MultiDoc2dial(datasets.GeneratorBasedBuilder):
         )
 
     def _split_generators(self, dl_manager):
+        # TODO: some of the configs remained to do
 
         my_urls = _URLs
 
@@ -359,13 +360,14 @@ class MultiDoc2dial(datasets.GeneratorBasedBuilder):
             ]
 
     def _load_doc_data_rc(self, filepath):
-        doc_filepath = os.path.join(os.path.dirname(filepath), "doc2dial_doc.json")
+        doc_filepath = os.path.join(os.path.dirname(filepath), "multidoc2dial_doc.json")
         with open(doc_filepath, encoding="utf-8") as f:
             data = json.load(f)["doc_data"]
         return data
 
     def _load_doc_data_rc_extra(self, filepath):
-        doc_filepath = os.path.join(os.path.dirname(filepath), "doc2dial_doc_with_unseen.json")
+        # TODO
+        doc_filepath = os.path.join(os.path.dirname(filepath), "multidoc2dial_doc_with_unseen.json")
         with open(doc_filepath, encoding="utf-8") as f:
             data = json.load(f)["doc_data"]
         return data
