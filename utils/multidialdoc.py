@@ -382,7 +382,7 @@ class MultiDoc2dial(datasets.GeneratorBasedBuilder):
         for ele in references:
             doc_id = ele["doc_id"]
             doc = docs[doc_id]
-            spans = doc["spans"],
+            spans = doc["spans"]
             doc_text = doc["doc_text"]
             
             id_sp = ele["id_sp"]
