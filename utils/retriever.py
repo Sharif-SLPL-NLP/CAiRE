@@ -5,15 +5,54 @@ import numpy as np
 import torch
 from torch.nn.functional import normalize
 import pickle
+import json
 
 tokenizer_labse = AutoTokenizer.from_pretrained("setu4993/LaBSE")
 model_labse = AutoModel.from_pretrained("setu4993/LaBSE")
+words2IDF = {}
+title_to_embeddings = {}
+N_DOC = 488
 
-with open('IDFs.pkl', 'rb') as f:
-    words2IDF = pickle.load(f)
-with open('title_to_embeddings.pkl') as f:
-    title_to_embeddings = pickle.load(f)
-N_DOC = len(title_to_embeddings.key())
+
+def load_docs(path2doc) -> None:
+    global title_to_embeddings, words2IDF, N_DOC
+
+    with open(path2doc, 'r') as f:
+        multidoc2dial_doc = json.load(f)
+    
+    doc_title_train = []
+    doc_texts_train = []
+    for doc_idx1 in multidoc2dial_doc['doc_data']:
+        for doc_idx2 in multidoc2dial_doc['doc_data'][doc_idx1]:
+            doc_title_train.append(doc_idx2)
+            doc_texts_train.append(multidoc2dial_doc['doc_data'][doc_idx1]\
+                                          [doc_idx2]['doc_text'].strip())
+    titles = list(set(doc_title_train))
+    N_DOC = len(titles)
+    
+    TRAIN_SIZE = len(titles)
+    for progress, title in enumerate(titles):
+        title_to_embeddings[title] = get_embeddings(title)
+        if progress % 50 == 0:
+            print('[Loading documents - title embedding] Progress Percent = {}%'.\
+                    format(100 * progress / TRAIN_SIZE))
+    
+    words = set()
+    doc_texts_train_tokenized = []
+    for doc in doc_texts_train:
+        tokenized_doc = [s.lower() for s in tokenizer_labse.tokenize(doc)]
+        doc_texts_train_tokenized.append(tokenized_doc) 
+        words = set(tokenized_doc).union(words)
+    
+    for progress, word in enumerate(words):
+        n_word = 0
+        for doc in doc_texts_train_tokenized:
+            if word in doc:
+                n_word += 1
+        words2IDF[word] = np.log(N_DOC / (n_word + 1))
+        if progress % 1000 == 0:
+            print('[Loading documents - IDF scores] Progress Percent = {}%'.\
+                    format(100 * progress / len(words)))
 
 
 def get_embeddings(sentece):
@@ -84,7 +123,7 @@ def predict_labelwise_doc_at_history_ordered(queries, title_embeddings, k=1) -> 
 
 def get_documents(docs, queries, k=10) -> List[str]:
     "returns list of related document IDs"
-    titles = list(set(docs).intersection(title_to_embeddings.keys()))
+    titles = list(title_to_embeddings.keys())
     title_embeddings = [title_to_embeddings[title] for title in titles]
     acc, best_k_idx = predict_labelwise_doc_at_history_ordered(queries, title_embeddings, k)
     return [titles[i] for i in best_k_idx]
