@@ -24,7 +24,7 @@ import os
 
 import datasets
 
-from retriever import get_documents
+import retriever
 
 MAX_Q_LEN = 100  # Max length of question
 YOUR_LOCAL_DOWNLOAD = "../dataset"  # For subtask1, MultiDoc2Dial v1.0 is already included in the folder "dataset".
@@ -369,7 +369,8 @@ class MultiDoc2dial(datasets.GeneratorBasedBuilder):
 
     def _load_doc_data_rc_extra(self, filepath):
         # TODO
-        doc_filepath = os.path.join(os.path.dirname(filepath), "multidoc2dial_doc_with_unseen.json")
+        doc_filepath = os.path.join(os.path.dirname(filepath), "multidoc2dial_doc.json")
+        retriever.load_docs(doc_filepath)
         with open(doc_filepath, encoding="utf-8") as f:
             data = json.load(f)["doc_data"]
         return data
@@ -669,7 +670,7 @@ class MultiDoc2dial(datasets.GeneratorBasedBuilder):
                                 continue
 
                             queries = list(reversed(all_user_utterances))
-                            doc_ids = get_documents(docs, queries)
+                            doc_ids = retriever.get_documents(domain, queries)
 
                             for doc_rank, doc_id in enumerate(doc_ids):
                                 question_str = " ".join(list(reversed(all_prev_utterances))).strip()
@@ -725,7 +726,7 @@ class MultiDoc2dial(datasets.GeneratorBasedBuilder):
         elif self.config.name == "multidoc2dial_rc_test":
             """Load dialog data in the reading comprehension task setup, where context is the grounding document,
             input query is dialog history in reversed order, and output to predict is the next agent turn."""
-
+            
             logging.info("generating examples from = %s", filepath)
             doc_data = self._load_doc_data_rc_extra(filepath)
             with open(filepath, encoding="utf-8") as f:
