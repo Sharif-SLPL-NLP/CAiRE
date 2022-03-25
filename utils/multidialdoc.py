@@ -230,7 +230,7 @@ class MultiDoc2dial(datasets.GeneratorBasedBuilder):
         datasets.BuilderConfig(
             name="multidoc2dial_rc_retriever",
             version=VERSION,
-            description="Load MultiDoc2Dial dataset for machine reading comprehension tasks for testdev with retriever",
+            description="Load MultiDoc2Dial validation dataset for machine reading comprehension tasks for testdev with retriever",
         ),
         datasets.BuilderConfig(
             name="multidoc2dial_rc_testdev",
@@ -499,7 +499,7 @@ class MultiDoc2dial(datasets.GeneratorBasedBuilder):
                     name=datasets.Split.VALIDATION,
                     gen_kwargs={
                         "filepath": os.path.join(
-                            data_dir, "multidialdoc/multidoc2dial/multidoc2dial_doc.json"
+                            data_dir, "multidialdoc/multidoc2dial/multidoc2dial_dial_validation.json"
                         ),
                     },
                 )
