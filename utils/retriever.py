@@ -6,6 +6,7 @@ import torch
 from torch.nn.functional import normalize
 import pickle
 import json
+from tqdm import tqdm
 
 tokenizer_labse = AutoTokenizer.from_pretrained("setu4993/LaBSE")
 model_labse = AutoModel.from_pretrained("setu4993/LaBSE")
@@ -31,11 +32,8 @@ def load_docs(path2doc) -> None:
     N_DOC = len(titles)
     
     TRAIN_SIZE = len(titles)
-    for progress, title in enumerate(titles):
+    for title in tqdm(titles, desc="[Loading documents - title embedding]"):
         title_to_embeddings[title] = get_embeddings(title)
-        if progress % 50 == 0:
-            print('[Loading documents - title embedding] Progress Percent = {}%'.\
-                    format(100 * progress / TRAIN_SIZE))
     
     words = set()
     doc_texts_train_tokenized = []
@@ -44,15 +42,12 @@ def load_docs(path2doc) -> None:
         doc_texts_train_tokenized.append(tokenized_doc) 
         words = set(tokenized_doc).union(words)
     
-    for progress, word in enumerate(words):
+    for word in tqdm(words, desc="[Loading documents - IDF scores]"):
         n_word = 0
         for doc in doc_texts_train_tokenized:
             if word in doc:
                 n_word += 1
         words2IDF[word] = np.log(N_DOC / (n_word + 1))
-        if progress % 1000 == 0:
-            print('[Loading documents - IDF scores] Progress Percent = {}%'.\
-                    format(100 * progress / len(words)))
 
 
 def get_embeddings(sentece):
