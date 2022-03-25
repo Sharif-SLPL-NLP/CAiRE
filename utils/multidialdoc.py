@@ -570,6 +570,7 @@ class MultiDoc2dial(datasets.GeneratorBasedBuilder):
 
     def _generate_examples(self, filepath):
         """This function returns the examples in the raw (text) form."""
+        # input("HERE")
         if self.config.name == "dialogue_domain":
             logging.info("generating examples from = %s", filepath)
             with open(filepath, encoding="utf-8") as f:
@@ -805,7 +806,7 @@ class MultiDoc2dial(datasets.GeneratorBasedBuilder):
             for each question we will return multiple instances with id_x where x is the ranking of the N-best document."""
 
             logging.info("generating examples from = %s", filepath)
-            doc_data = self._load_doc_data_rc(filepath)
+            doc_data = self._load_doc_data_rc_extra(filepath)
             with open(filepath, encoding="utf-8") as f:
                 dial_data = json.load(f)["dial_data"]
                 for domain, domain_dials in dial_data.items():
