@@ -116,7 +116,7 @@ def predict_labelwise_doc_at_history_ordered(queries, title_embeddings, k=1) -> 
     return (accuracy, best_k_idx)
 
 
-def get_documents(docs, queries, k=10) -> List[str]:
+def get_documents(queries, k=10) -> List[str]:
     "returns list of related document IDs"
     titles = list(title_to_embeddings.keys())
     title_embeddings = [title_to_embeddings[title] for title in titles]
