@@ -1,7 +1,7 @@
 python run_qa.py \
- --dataset_name '../utils/dialdoc.py' \
- --dataset_config_name doc2dial_rc_testdev \
- --model_name_or_path [PATH TO YOUR MODEL] \
+ --dataset_name '../utils/multidialdoc.py' \
+ --dataset_config_name multidoc2dial_rc_retriever \
+ --model_name_or_path save/roberta-large-coqa-quac-doqa-multidialdoc-BACKUP \
  --do_eval \
  --logging_steps 2000 \
  --save_steps 2000 \
@@ -10,7 +10,7 @@ python run_qa.py \
  --max_answer_length 100 \
  --doc_stride 128  \
  --cache_dir cache \
- --output_dir [PATH TO YOUR MODEL]/testdev \
+ --output_dir save/roberta-large-coqa-quac-doqa-multidialdoc-BACKUP/testretriever \
  --overwrite_output_dir  \
  --per_device_eval_batch_size 2  \
  --gradient_accumulation_steps 15  \
