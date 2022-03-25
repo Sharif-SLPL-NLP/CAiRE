@@ -12,22 +12,24 @@ tokenizer_labse = AutoTokenizer.from_pretrained("setu4993/LaBSE")
 model_labse = AutoModel.from_pretrained("setu4993/LaBSE")
 words2IDF = {}
 title_to_embeddings = {}
+title_to_domain = {}
 N_DOC = 488
 
 
 def load_docs(path2doc) -> None:
-    global title_to_embeddings, words2IDF, N_DOC
+    global title_to_embeddings, title_to_domain, words2IDF, N_DOC
 
     with open(path2doc, 'r') as f:
         multidoc2dial_doc = json.load(f)
     
     doc_title_train = []
     doc_texts_train = []
-    for doc_idx1 in multidoc2dial_doc['doc_data']:
-        for doc_idx2 in multidoc2dial_doc['doc_data'][doc_idx1]:
-            doc_title_train.append(doc_idx2)
-            doc_texts_train.append(multidoc2dial_doc['doc_data'][doc_idx1]\
-                                          [doc_idx2]['doc_text'].strip())
+    for domain in multidoc2dial_doc['doc_data']:
+        for title in multidoc2dial_doc['doc_data'][domain]:
+            doc_title_train.append(title)
+            doc_texts_train.append(multidoc2dial_doc['doc_data'][domain]\
+                                          [title]['doc_text'].strip())
+            title_to_domain[title] = domain
     titles = list(set(doc_title_train))
     N_DOC = len(titles)
     
@@ -118,7 +120,7 @@ def predict_labelwise_doc_at_history_ordered(queries, title_embeddings, k=1) -> 
 
 def get_documents(domain, queries, k=10) -> List[str]:
     "returns list of related document IDs"
-    titles = list(title_to_embeddings.keys())
+    titles = [title for title in title_to_embeddings.keys() if title_to_domain[title] == domain]
     title_embeddings = [title_to_embeddings[title] for title in titles]
     acc, best_k_idx = predict_labelwise_doc_at_history_ordered(queries, title_embeddings, k)
     return [titles[i] for i in best_k_idx]
