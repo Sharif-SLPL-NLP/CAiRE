@@ -371,6 +371,13 @@ class MultiDoc2dial(datasets.GeneratorBasedBuilder):
                     "title": datasets.Value("string"),
                     "context": datasets.Value("string"),
                     "question": datasets.Value("string"),
+                    "answers": datasets.features.Sequence(
+                        {
+                            "text": datasets.Value("string"),
+                            "answer_start": datasets.Value("int32"),
+                            # "spans": datasets.features.Sequence(datasets.Value("string"))
+                        }
+                    ),
                     "domain": datasets.Value("string"),
                 }
             )
@@ -499,8 +506,8 @@ class MultiDoc2dial(datasets.GeneratorBasedBuilder):
                     name=datasets.Split.VALIDATION,
                     gen_kwargs={
                         "filepath": os.path.join(
-                            data_dir, "multidialdoc/multidoc2dial/multidoc2dial_dial_test.json"
-                            # data_dir, "multidialdoc/multidoc2dial/multidoc2dial_dial_validation.json"
+                            # data_dir, "multidialdoc/multidoc2dial/multidoc2dial_dial_test.json"
+                            data_dir, "multidialdoc/multidoc2dial/multidoc2dial_dial_validation.json"
                         ),
                     },
                 )
