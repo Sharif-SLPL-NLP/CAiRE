@@ -228,7 +228,7 @@ class MultiDoc2dial(datasets.GeneratorBasedBuilder):
             description="Load MultiDoc2Dial dataset for machine reading comprehension tasks",
         ),
         datasets.BuilderConfig(
-            name="multidoc2dial_rc_retriever",
+            name="multidoc2dial_rc_retriever_testdev",
             version=VERSION,
             description="Load MultiDoc2Dial validation dataset for machine reading comprehension tasks for testdev with retriever",
         ),
@@ -364,7 +364,7 @@ class MultiDoc2dial(datasets.GeneratorBasedBuilder):
                     "domain": datasets.Value("string"),
                 }
             )
-        elif self.config.name == "multidoc2dial_rc_retriever":
+        elif self.config.name == "multidoc2dial_rc_retriever_testdev":
             features = datasets.Features(
                 {
                     "id": datasets.Value("string"),
@@ -493,13 +493,14 @@ class MultiDoc2dial(datasets.GeneratorBasedBuilder):
                 ),
             ]
             
-        elif self.config.name == "multidoc2dial_rc_retriever":
+        elif self.config.name == "multidoc2dial_rc_retriever_testdev":
             return [
                 datasets.SplitGenerator(
                     name=datasets.Split.VALIDATION,
                     gen_kwargs={
                         "filepath": os.path.join(
-                            data_dir, "multidialdoc/multidoc2dial/multidoc2dial_dial_validation.json"
+                            data_dir, "multidialdoc/multidoc2dial/multidoc2dial_dial_test.json"
+                            # data_dir, "multidialdoc/multidoc2dial/multidoc2dial_dial_validation.json"
                         ),
                     },
                 )
@@ -800,7 +801,7 @@ class MultiDoc2dial(datasets.GeneratorBasedBuilder):
                                 qa["answers"] = turn_to_predict["answers"]
                             yield id_, qa
 
-        elif self.config.name == "multidoc2dial_rc_retriever":
+        elif self.config.name == "multidoc2dial_rc_retriever_testdev":
             """Load dialog data in the reading comprehension task setup, where context is the grounding document,
             input query is dialog history in reversed order, and output to predict is the next agent turn.
             for each question we will return multiple instances with id_x where x is the ranking of the N-best document."""
@@ -847,9 +848,17 @@ class MultiDoc2dial(datasets.GeneratorBasedBuilder):
                                     "id": id_, # For subtask1, the id should be this format.
                                     "title": doc_id,
                                     "context": docs[doc_id]["doc_text"],
-                                    "question": question,
+                                    "question": question,    
+                                    "answers": [],  # For subtask1, "answers" contains the grounding annotations for evaluation.
                                     "domain": domain,
                                 }
+                                if "answers" not in turn_to_predict:
+                                    turn_to_predict["answers"], doc_id = self._get_answers_rc(
+                                        turn_to_predict["references"],
+                                        docs
+                                    )
+                                if turn_to_predict["answers"]:
+                                    qa["answers"] = turn_to_predict["answers"]
                                 yield id_, qa
 
         elif self.config.name == "multidoc2dial_rc_testdev":
