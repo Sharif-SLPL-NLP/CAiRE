@@ -15,6 +15,7 @@
 """
 A subclass of `Trainer` specific to Question-Answering tasks
 """
+import collections
 
 from transformers import Trainer, is_datasets_available, is_torch_tpu_available
 from transformers.trainer_utils import PredictionOutput
@@ -26,6 +27,8 @@ if is_datasets_available():
 if is_torch_tpu_available():
     import torch_xla.core.xla_model as xm
     import torch_xla.debug.metrics as met
+
+EvalPred = collections.namedtuple('EvalPred', ['predictions', 'label_ids'])
 
 
 class QuestionAnsweringTrainer(Trainer):
@@ -60,6 +63,19 @@ class QuestionAnsweringTrainer(Trainer):
 
         if self.post_process_function is not None and self.compute_metrics is not None:
             eval_preds = self.post_process_function(eval_examples, eval_dataset, output.predictions)
+            
+            if len(eval_preds.predictions) != len(eval_preds.label_ids):
+                label_ids = []
+                ids = []
+                for label in eval_preds.label_ids:
+                    id, answers = label["id"], label["answers"]
+                    new_id = "{}_{}".format(* id.split('_')[0:2])
+                    if new_id not in ids:
+                        ids.append(new_id)
+                        label_ids.append({"id": new_id, "answers": answers})
+
+                eval_preds = EvalPred(eval_preds.predictions, label_ids)
+
             metrics = self.compute_metrics(eval_preds)
 
             # Prefix all keys with metric_key_prefix + '_'
