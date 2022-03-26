@@ -24,18 +24,51 @@ from typing import Optional, Tuple
 import numpy as np
 from tqdm.auto import tqdm
 
+from transformers import AutoTokenizer, AutoModel, AutoConfig
+import numpy as np
+import torch
+from torch.nn.functional import normalize
+import pickle
+import json
+from tqdm import tqdm
+
+tokenizer_labse = AutoTokenizer.from_pretrained("setu4993/LaBSE")
+model_labse = AutoModel.from_pretrained("setu4993/LaBSE")
 
 logger = logging.getLogger(__name__)
 
 
-def get_best_answer_for_question(answers, question):
+def get_embeddings(sentece):
+    """
+    Return embeddings based on encoder model
+
+    :param sentence: input sentence(s)
+    :type sentence: str or list of strs
+    :return: embeddings
+    """
+    tokenized = tokenizer_labse(sentece,
+                                return_tensors="pt",
+                                padding=True)
+    with torch.no_grad():
+        embeddings = model_labse(**tokenized)
+    
+    return np.squeeze(np.array(embeddings.pooler_output))
+
+
+def get_best_answer_for_question(answers, question) -> str:
     """
     answers: List
     question: Str
 
     Returns answer: Str
     """
-    pass
+    question_embd = get_embeddings(question)
+    answers_embds = list(map(get_embeddings, answers))
+    answer_sim = list(map(lambda x: np.dot(x, question_embd) /
+                            (np.linalg.norm(question_embd) * np.linalg.norm(x)),
+                            answers_embds))
+    answer_sim = np.array(answer_sim)
+    return answers[np.argmax(answer_sim)]
 
 
 def final_postprocess_qa_predictions(
