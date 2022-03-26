@@ -97,7 +97,7 @@ def final_postprocess_qa_predictions(
         new_id = "{}_{}".format(* id.split('_')[0:2])
         if new_id not in predictions:
             predictions[new_id] = {
-                "question": examples[index].question,
+                "question": examples[index]["question"],
                 "predictions": [all_predictions[id]],
                 # answer
             }
@@ -310,8 +310,8 @@ def postprocess_qa_predictions(
             for pred in predictions
         ]
 
-    if len(example_id_to_index.keys()[0].split('_')) == 3:
-        final_postprocess_qa_predictions(example_id_to_index, examples, all_predictions)
+    if len(next(iter(example_id_to_index)).split('_')) == 3:
+        all_predictions = final_postprocess_qa_predictions(example_id_to_index, examples, all_predictions)
 
     # If we have an output_dir, let's save all those dicts.
     if output_dir is not None:
