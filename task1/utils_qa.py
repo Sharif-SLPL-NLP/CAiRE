@@ -28,6 +28,57 @@ from tqdm.auto import tqdm
 logger = logging.getLogger(__name__)
 
 
+def get_best_answer_for_question(answers, question):
+    """
+    answers: List
+    question: Str
+
+    Returns answer: Str
+    """
+    pass
+
+
+def final_postprocess_qa_predictions(
+    example_id_to_index, 
+    examples, 
+    all_predictions
+):
+    """
+    remove duplicate answers for questions by getting attention between questions and the answers
+
+    :example_id_to_index: Dict{id: examples_index}
+    :examples: Dataset(id, context, question, domain, title)
+    :all_predictions: Dict{id: prediction_text}
+
+    Returns a dict of final predictions Dict{id: prediction_text}
+    """
+    predictions = collections.OrderedDict()
+    # {
+        # id
+            # question:
+            # predictions = []
+            # answer?
+    # }
+
+    for id, index in example_id_to_index.items():
+        new_id = "{}_{}".format(* id.split('_')[0:2])
+        if new_id not in predictions:
+            predictions[new_id] = {
+                "question": examples[index].question,
+                "predictions": [all_predictions[id]],
+                # answer
+            }
+        else:
+            predictions[new_id]["predictions"].append([all_predictions[id]])
+
+    output = collections.OrderedDict()
+
+    for id in predictions:
+        output[id] = get_best_answer_for_question(predictions[id]["predictions"], predictions[id]["question"])
+        
+    return output
+
+
 def postprocess_qa_predictions(
     examples,
     features,
@@ -225,6 +276,9 @@ def postprocess_qa_predictions(
             {k: (float(v) if isinstance(v, (np.float16, np.float32, np.float64)) else v) for k, v in pred.items()}
             for pred in predictions
         ]
+
+    if len(example_id_to_index.keys()[0].split('_')) == 3:
+        final_postprocess_qa_predictions(example_id_to_index, examples, all_predictions)
 
     # If we have an output_dir, let's save all those dicts.
     if output_dir is not None:
