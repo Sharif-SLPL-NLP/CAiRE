@@ -370,6 +370,7 @@ class MultiDoc2dial(datasets.GeneratorBasedBuilder):
                     "id": datasets.Value("string"),
                     "title": datasets.Value("string"),
                     "context": datasets.Value("string"),
+                    "only-question": datasets.Value("string"),
                     "question": datasets.Value("string"),
                     "answers": datasets.features.Sequence(
                         {
@@ -845,7 +846,7 @@ class MultiDoc2dial(datasets.GeneratorBasedBuilder):
                                 continue
 
                             queries = list(reversed(all_user_utterances))
-                            doc_ids = retriever_get_documents(domain, queries)
+                            doc_ids = retriever_get_documents(domain, queries, k=1)
 
                             for doc_rank, doc_id in enumerate(doc_ids):
                                 question_str = " ".join(list(reversed(all_prev_utterances))).strip()
@@ -855,6 +856,7 @@ class MultiDoc2dial(datasets.GeneratorBasedBuilder):
                                     "id": id_, # For subtask1, the id should be this format.
                                     "title": doc_id,
                                     "context": docs[doc_id]["doc_text"],
+                                    "only-question": turn["utterance"],    
                                     "question": question,    
                                     "answers": [],  # For subtask1, "answers" contains the grounding annotations for evaluation.
                                     "domain": domain,
