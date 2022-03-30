@@ -422,6 +422,7 @@ class MultiDoc2dial(datasets.GeneratorBasedBuilder):
                         }
                     ),
                     "domain": datasets.Value("string"),
+                    "doc-rank": datasets.Value("int32"),
                 }
             )
         elif self.config.name == "multidoc2dial_rc_mddseen_dev":
@@ -432,14 +433,8 @@ class MultiDoc2dial(datasets.GeneratorBasedBuilder):
                     "context": datasets.Value("string"),
                     "only-question": datasets.Value("string"),
                     "question": datasets.Value("string"),
-                    "answers": datasets.features.Sequence(
-                        {
-                            "text": datasets.Value("string"),
-                            "answer_start": datasets.Value("int32"),
-                            # "spans": datasets.features.Sequence(datasets.Value("string"))
-                        }
-                    ),
                     "domain": datasets.Value("string"),
+                    "doc-rank": datasets.Value("int32"),
                 }
             )
         elif self.config.name == "multidoc2dial_rc_mddseen_test":
@@ -450,14 +445,8 @@ class MultiDoc2dial(datasets.GeneratorBasedBuilder):
                     "context": datasets.Value("string"),
                     "only-question": datasets.Value("string"),
                     "question": datasets.Value("string"),
-                    "answers": datasets.features.Sequence(
-                        {
-                            "text": datasets.Value("string"),
-                            "answer_start": datasets.Value("int32"),
-                            # "spans": datasets.features.Sequence(datasets.Value("string"))
-                        }
-                    ),
                     "domain": datasets.Value("string"),
+                    "doc-rank": datasets.Value("int32"),
                 }
             )
         elif self.config.name == "multidoc2dial_rc_mddunseen_dev":
@@ -468,14 +457,8 @@ class MultiDoc2dial(datasets.GeneratorBasedBuilder):
                     "context": datasets.Value("string"),
                     "only-question": datasets.Value("string"),
                     "question": datasets.Value("string"),
-                    "answers": datasets.features.Sequence(
-                        {
-                            "text": datasets.Value("string"),
-                            "answer_start": datasets.Value("int32"),
-                            # "spans": datasets.features.Sequence(datasets.Value("string"))
-                        }
-                    ),
                     "domain": datasets.Value("string"),
+                    "doc-rank": datasets.Value("int32"),
                 }
             )
         elif self.config.name == "multidoc2dial_rc_mddunseen_test":
@@ -486,14 +469,8 @@ class MultiDoc2dial(datasets.GeneratorBasedBuilder):
                     "context": datasets.Value("string"),
                     "only-question": datasets.Value("string"),
                     "question": datasets.Value("string"),
-                    "answers": datasets.features.Sequence(
-                        {
-                            "text": datasets.Value("string"),
-                            "answer_start": datasets.Value("int32"),
-                            # "spans": datasets.features.Sequence(datasets.Value("string"))
-                        }
-                    ),
                     "domain": datasets.Value("string"),
+                    "doc-rank": datasets.Value("int32"),
                 }
             )
 
@@ -637,7 +614,7 @@ class MultiDoc2dial(datasets.GeneratorBasedBuilder):
                     gen_kwargs={
                         "filepath": os.path.join(
                             # data_dir, "multidialdoc/multidoc2dial/multidoc2dial_dial_test.json"
-                            data_dir, "multidialdoc/multidoc2dial/multidoc2dial_dial_validation.json"
+                            data_dir, "multidialdoc/dialdoc2022_sharedtask/MDD-SEEN/phase_dev/mdd_dev_pub.json"
                         ),
                     },
                 )
@@ -1071,7 +1048,7 @@ class MultiDoc2dial(datasets.GeneratorBasedBuilder):
                             for doc_rank, doc_id in enumerate(doc_ids):
                                 question_str = " ".join(list(reversed(all_prev_utterances))).strip()
                                 question = " ".join(question_str.split()[:MAX_Q_LEN])
-                                id_ = "{}_{}_{}".format(dial["dial_id"], turn["turn_id"], doc_rank) # For subtask1, the id should be this format.
+                                id_ = "{}_{}".format(dial["dial_id"], turn["turn_id"]) # For subtask1, the id should be this format.
                                 qa = {
                                     "id": id_, # For subtask1, the id should be this format.
                                     "title": doc_id,
@@ -1080,6 +1057,7 @@ class MultiDoc2dial(datasets.GeneratorBasedBuilder):
                                     "question": question,    
                                     "answers": [],  # For subtask1, "answers" contains the grounding annotations for evaluation.
                                     "domain": domain,
+                                    "doc-rank": doc_rank
                                 }
                                 if "answers" not in turn_to_predict:
                                     turn_to_predict["answers"], doc_id = self._get_answers_rc(
@@ -1108,11 +1086,6 @@ class MultiDoc2dial(datasets.GeneratorBasedBuilder):
                             all_prev_utterances.append(
                                 "\t{}: {}".format(turn["role"], turn["utterance"])
                             )
-                            if "answers" not in turn:
-                                turn["answers"], doc_id = self._get_answers_rc(
-                                    turn["references"],
-                                    docs
-                                )
                             if turn["role"] == "agent":
                                 continue
                             else:
@@ -1132,23 +1105,16 @@ class MultiDoc2dial(datasets.GeneratorBasedBuilder):
                             for doc_rank, doc_id in enumerate(doc_ids):
                                 question_str = " ".join(list(reversed(all_prev_utterances))).strip()
                                 question = " ".join(question_str.split()[:MAX_Q_LEN])
-                                id_ = "{}_{}_{}".format(dial["dial_id"], turn["turn_id"], doc_rank) # For subtask1, the id should be this format.
+                                id_ = "{}_{}".format(dial["dial_id"], turn["turn_id"]) # For subtask1, the id should be this format.
                                 qa = {
                                     "id": id_, # For subtask1, the id should be this format.
                                     "title": doc_id,
                                     "context": docs[doc_id]["doc_text"],
                                     "only-question": turn["utterance"],    
                                     "question": question,    
-                                    "answers": [],  # For subtask1, "answers" contains the grounding annotations for evaluation.
                                     "domain": domain,
+                                    "doc-rank": doc_rank
                                 }
-                                if "answers" not in turn_to_predict:
-                                    turn_to_predict["answers"], doc_id = self._get_answers_rc(
-                                        turn_to_predict["references"],
-                                        docs
-                                    )
-                                if turn_to_predict["answers"]:
-                                    qa["answers"] = turn_to_predict["answers"]
                                 yield id_, qa
 
         elif self.config.name == "multidoc2dial_rc_mddseen_test":
@@ -1193,7 +1159,7 @@ class MultiDoc2dial(datasets.GeneratorBasedBuilder):
                             for doc_rank, doc_id in enumerate(doc_ids):
                                 question_str = " ".join(list(reversed(all_prev_utterances))).strip()
                                 question = " ".join(question_str.split()[:MAX_Q_LEN])
-                                id_ = "{}_{}_{}".format(dial["dial_id"], turn["turn_id"], doc_rank) # For subtask1, the id should be this format.
+                                id_ = "{}_{}".format(dial["dial_id"], turn["turn_id"]) # For subtask1, the id should be this format.
                                 qa = {
                                     "id": id_, # For subtask1, the id should be this format.
                                     "title": doc_id,
@@ -1202,6 +1168,7 @@ class MultiDoc2dial(datasets.GeneratorBasedBuilder):
                                     "question": question,    
                                     "answers": [],  # For subtask1, "answers" contains the grounding annotations for evaluation.
                                     "domain": domain,
+                                    "doc-rank": doc_rank
                                 }
                                 if "answers" not in turn_to_predict:
                                     turn_to_predict["answers"], doc_id = self._get_answers_rc(
@@ -1254,7 +1221,7 @@ class MultiDoc2dial(datasets.GeneratorBasedBuilder):
                             for doc_rank, doc_id in enumerate(doc_ids):
                                 question_str = " ".join(list(reversed(all_prev_utterances))).strip()
                                 question = " ".join(question_str.split()[:MAX_Q_LEN])
-                                id_ = "{}_{}_{}".format(dial["dial_id"], turn["turn_id"], doc_rank) # For subtask1, the id should be this format.
+                                id_ = "{}_{}".format(dial["dial_id"], turn["turn_id"]) # For subtask1, the id should be this format.
                                 qa = {
                                     "id": id_, # For subtask1, the id should be this format.
                                     "title": doc_id,
@@ -1263,6 +1230,7 @@ class MultiDoc2dial(datasets.GeneratorBasedBuilder):
                                     "question": question,    
                                     "answers": [],  # For subtask1, "answers" contains the grounding annotations for evaluation.
                                     "domain": domain,
+                                    "doc-rank": doc_rank
                                 }
                                 if "answers" not in turn_to_predict:
                                     turn_to_predict["answers"], doc_id = self._get_answers_rc(
@@ -1315,7 +1283,7 @@ class MultiDoc2dial(datasets.GeneratorBasedBuilder):
                             for doc_rank, doc_id in enumerate(doc_ids):
                                 question_str = " ".join(list(reversed(all_prev_utterances))).strip()
                                 question = " ".join(question_str.split()[:MAX_Q_LEN])
-                                id_ = "{}_{}_{}".format(dial["dial_id"], turn["turn_id"], doc_rank) # For subtask1, the id should be this format.
+                                id_ = "{}_{}".format(dial["dial_id"], turn["turn_id"]) # For subtask1, the id should be this format.
                                 qa = {
                                     "id": id_, # For subtask1, the id should be this format.
                                     "title": doc_id,
@@ -1324,6 +1292,7 @@ class MultiDoc2dial(datasets.GeneratorBasedBuilder):
                                     "question": question,    
                                     "answers": [],  # For subtask1, "answers" contains the grounding annotations for evaluation.
                                     "domain": domain,
+                                    "doc-rank": doc_rank
                                 }
                                 if "answers" not in turn_to_predict:
                                     turn_to_predict["answers"], doc_id = self._get_answers_rc(

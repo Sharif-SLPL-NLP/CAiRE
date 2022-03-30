@@ -94,14 +94,13 @@ def final_postprocess_qa_predictions(
     # }
 
     for id, index in tqdm(example_id_to_index.items()):
-        new_id = "{}_{}".format(* id.split('_')[0:2])
-        if new_id not in predictions:
-            predictions[new_id] = {
+        if id not in predictions:
+            predictions[id] = {
                 "question": examples[index]["only-question"],
                 "predictions": [all_predictions[id]],
             }
         else:
-            predictions[new_id]["predictions"].append([all_predictions[id]])
+            predictions[id]["predictions"].append([all_predictions[id]])
 
     output = collections.OrderedDict()
 
