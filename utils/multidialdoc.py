@@ -228,11 +228,6 @@ class MultiDoc2dial(datasets.GeneratorBasedBuilder):
             description="Load MultiDoc2Dial dataset for machine reading comprehension tasks",
         ),
         datasets.BuilderConfig(
-            name="multidoc2dial_rc_retriever_testdev",
-            version=VERSION,
-            description="Load MultiDoc2Dial validation dataset for machine reading comprehension tasks for testdev with retriever",
-        ),
-        datasets.BuilderConfig(
             name="multidoc2dial_rc_testdev",
             version=VERSION,
             description="Load MultiDoc2Dial dataset for machine reading comprehension tasks for testdev",
@@ -243,6 +238,11 @@ class MultiDoc2dial(datasets.GeneratorBasedBuilder):
             description="Load MultiDoc2Dial dataset for machine reading comprehension tasks for test",
         ),
 
+        datasets.BuilderConfig(
+            name="multidoc2dial_rc_retriever_testdev",
+            version=VERSION,
+            description="Load MultiDoc2Dial validation dataset for machine reading comprehension tasks for testdev with retriever",
+        ),
         datasets.BuilderConfig(
             name="multidoc2dial_rc_mddseen_dev",
             version=VERSION,
@@ -385,24 +385,6 @@ class MultiDoc2dial(datasets.GeneratorBasedBuilder):
                     "domain": datasets.Value("string"),
                 }
             )
-        elif self.config.name == "multidoc2dial_rc_retriever_testdev":
-            features = datasets.Features(
-                {
-                    "id": datasets.Value("string"),
-                    "title": datasets.Value("string"),
-                    "context": datasets.Value("string"),
-                    "only-question": datasets.Value("string"),
-                    "question": datasets.Value("string"),
-                    "answers": datasets.features.Sequence(
-                        {
-                            "text": datasets.Value("string"),
-                            "answer_start": datasets.Value("int32"),
-                            # "spans": datasets.features.Sequence(datasets.Value("string"))
-                        }
-                    ),
-                    "domain": datasets.Value("string"),
-                }
-            )
         elif self.config.name == "multidoc2dial_rc_testdev":
             features = datasets.Features(
                 {
@@ -424,13 +406,39 @@ class MultiDoc2dial(datasets.GeneratorBasedBuilder):
                 }
             )
 
+        elif self.config.name == "multidoc2dial_rc_retriever_testdev":
+            features = datasets.Features(
+                {
+                    "id": datasets.Value("string"),
+                    "title": datasets.Value("string"),
+                    "context": datasets.Value("string"),
+                    "only-question": datasets.Value("string"),
+                    "question": datasets.Value("string"),
+                    "answers": datasets.features.Sequence(
+                        {
+                            "text": datasets.Value("string"),
+                            "answer_start": datasets.Value("int32"),
+                            # "spans": datasets.features.Sequence(datasets.Value("string"))
+                        }
+                    ),
+                    "domain": datasets.Value("string"),
+                }
+            )
         elif self.config.name == "multidoc2dial_rc_mddseen_dev":
             features = datasets.Features(
                 {
                     "id": datasets.Value("string"),
                     "title": datasets.Value("string"),
                     "context": datasets.Value("string"),
+                    "only-question": datasets.Value("string"),
                     "question": datasets.Value("string"),
+                    "answers": datasets.features.Sequence(
+                        {
+                            "text": datasets.Value("string"),
+                            "answer_start": datasets.Value("int32"),
+                            # "spans": datasets.features.Sequence(datasets.Value("string"))
+                        }
+                    ),
                     "domain": datasets.Value("string"),
                 }
             )
@@ -440,7 +448,15 @@ class MultiDoc2dial(datasets.GeneratorBasedBuilder):
                     "id": datasets.Value("string"),
                     "title": datasets.Value("string"),
                     "context": datasets.Value("string"),
+                    "only-question": datasets.Value("string"),
                     "question": datasets.Value("string"),
+                    "answers": datasets.features.Sequence(
+                        {
+                            "text": datasets.Value("string"),
+                            "answer_start": datasets.Value("int32"),
+                            # "spans": datasets.features.Sequence(datasets.Value("string"))
+                        }
+                    ),
                     "domain": datasets.Value("string"),
                 }
             )
@@ -450,7 +466,15 @@ class MultiDoc2dial(datasets.GeneratorBasedBuilder):
                     "id": datasets.Value("string"),
                     "title": datasets.Value("string"),
                     "context": datasets.Value("string"),
+                    "only-question": datasets.Value("string"),
                     "question": datasets.Value("string"),
+                    "answers": datasets.features.Sequence(
+                        {
+                            "text": datasets.Value("string"),
+                            "answer_start": datasets.Value("int32"),
+                            # "spans": datasets.features.Sequence(datasets.Value("string"))
+                        }
+                    ),
                     "domain": datasets.Value("string"),
                 }
             )
@@ -460,7 +484,15 @@ class MultiDoc2dial(datasets.GeneratorBasedBuilder):
                     "id": datasets.Value("string"),
                     "title": datasets.Value("string"),
                     "context": datasets.Value("string"),
+                    "only-question": datasets.Value("string"),
                     "question": datasets.Value("string"),
+                    "answers": datasets.features.Sequence(
+                        {
+                            "text": datasets.Value("string"),
+                            "answer_start": datasets.Value("int32"),
+                            # "spans": datasets.features.Sequence(datasets.Value("string"))
+                        }
+                    ),
                     "domain": datasets.Value("string"),
                 }
             )
