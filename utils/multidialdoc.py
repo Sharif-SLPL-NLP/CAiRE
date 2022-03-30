@@ -613,7 +613,6 @@ class MultiDoc2dial(datasets.GeneratorBasedBuilder):
                     name=datasets.Split.VALIDATION,
                     gen_kwargs={
                         "filepath": os.path.join(
-                            # data_dir, "multidialdoc/multidoc2dial/multidoc2dial_dial_test.json"
                             data_dir, "multidialdoc/dialdoc2022_sharedtask/MDD-SEEN/phase_dev/mdd_dev_pub.json"
                         ),
                     },
@@ -625,8 +624,7 @@ class MultiDoc2dial(datasets.GeneratorBasedBuilder):
                     name=datasets.Split.VALIDATION,
                     gen_kwargs={
                         "filepath": os.path.join(
-                            # data_dir, "multidialdoc/multidoc2dial/multidoc2dial_dial_test.json"
-                            data_dir, "multidialdoc/multidoc2dial/multidoc2dial_dial_validation.json"
+                            data_dir, "multidialdoc/dialdoc2022_sharedtask/MDD-SEEN/phase_test/mdd_test_pub.json"
                         ),
                     },
                 )
@@ -637,8 +635,7 @@ class MultiDoc2dial(datasets.GeneratorBasedBuilder):
                     name=datasets.Split.VALIDATION,
                     gen_kwargs={
                         "filepath": os.path.join(
-                            # data_dir, "multidialdoc/multidoc2dial/multidoc2dial_dial_test.json"
-                            data_dir, "multidialdoc/multidoc2dial/multidoc2dial_dial_validation.json"
+                            data_dir, "multidialdoc/dialdoc2022_sharedtask/MDD-UNSEEN/phase_dev/mdd_dev_pub.json"
                         ),
                     },
                 )
@@ -649,8 +646,7 @@ class MultiDoc2dial(datasets.GeneratorBasedBuilder):
                     name=datasets.Split.VALIDATION,
                     gen_kwargs={
                         "filepath": os.path.join(
-                            # data_dir, "multidialdoc/multidoc2dial/multidoc2dial_dial_test.json"
-                            data_dir, "multidialdoc/multidoc2dial/multidoc2dial_dial_validation.json"
+                            data_dir, "multidialdoc/dialdoc2022_sharedtask/MDD-UNSEEN/phase_test/mdd_test_pub.json"
                         ),
                     },
                 )
