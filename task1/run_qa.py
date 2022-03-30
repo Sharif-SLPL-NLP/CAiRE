@@ -193,6 +193,9 @@ class ExtraArguments:
     ensemble_file_path: Optional[str] = field(
         default=None, metadata={"help": "The path to the ensemble file."}
     )
+    only_predict: Optional[str] = field(
+        default=None, metadata={"help": "The path to the prediction file."}
+    )
 
 
 def main():
@@ -415,7 +418,13 @@ def main():
                 for key, value in sorted(results.items()):
                     logger.info(f"  {key} = {value}")
                     writer.write(f"{key} = {value}\n")
-                    
+
+    # Prediction
+    if extra_args.only_predict:
+        logger.info("*** Prediction ***")
+        results = trainer.only_predict()
+        logger.info("*** Prediction Ended ***")
+
     return results
 
 def _mp_fn(index):

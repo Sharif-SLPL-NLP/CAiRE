@@ -123,3 +123,42 @@ class QuestionAnsweringTrainer(Trainer):
         metrics = self.compute_metrics(eval_preds)
 
         return PredictionOutput(predictions=eval_preds.predictions, label_ids=eval_preds.label_ids, metrics=metrics)
+
+    def only_predict(self, eval_dataset=None, eval_examples=None, ignore_keys=None, metric_key_prefix="eval",):
+        eval_dataset = self.eval_dataset if eval_dataset is None else eval_dataset
+        eval_dataloader = self.get_eval_dataloader(eval_dataset)
+        eval_examples = self.eval_examples if eval_examples is None else eval_examples
+
+        output = self.prediction_loop(
+            eval_dataloader,
+            description="Evaluation",
+            # No point gathering the predictions if there are no metrics, otherwise we defer to
+            # self.args.prediction_loss_only
+            prediction_loss_only=True,
+            ignore_keys=ignore_keys,
+        )
+
+        # We might have removed columns from the dataset so we put them back.
+        if isinstance(eval_dataset, datasets.Dataset):
+            eval_dataset.set_format(type=eval_dataset.format["type"], columns=list(eval_dataset.features.keys()))
+
+        eval_preds = self.post_process_function(eval_examples, eval_dataset, output.predictions)
+        
+        if len(eval_preds.predictions) != len(eval_preds.label_ids):
+            label_ids = []
+            ids = []
+            for label in eval_preds.label_ids:
+                id, answers = label["id"], label["answers"]
+                new_id = "{}_{}".format(* id.split('_')[0:2])
+                if new_id not in ids:
+                    ids.append(new_id)
+                    label_ids.append({"id": new_id, "answers": answers})
+
+            eval_preds = EvalPred(eval_preds.predictions, label_ids)
+
+        if self.args.tpu_metrics_debug or self.args.debug:
+            # tpu-comment: Logging debug metrics for PyTorch/XLA (compile, execute times, ops, etc.)
+            xm.master_print(met.metrics_report())
+
+        self.control = self.callback_handler.on_evaluate(self.args, self.state, self.control, {})
+        return {}
