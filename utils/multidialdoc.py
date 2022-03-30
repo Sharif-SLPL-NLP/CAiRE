@@ -149,12 +149,18 @@ def predict_labelwise_doc_at_history_ordered(queries, title_embeddings, k=1) -> 
     return (accuracy, best_k_idx)
 
 
-def retriever_get_documents(domain, queries, k=10) -> List[str]:
+def retriever_get_documents(domain, queries, k=1) -> List[str]:
     "returns list of related document IDs"
-    titles = [title for title in title_to_embeddings.keys() if title_to_domain[title] == domain]
+    if domain:
+        titles = [title for title in title_to_embeddings.keys() if title_to_domain[title] == domain]
+    else:
+        titles = [title for title in title_to_embeddings.keys()]
     title_embeddings = [title_to_embeddings[title] for title in titles]
     acc, best_k_idx = predict_labelwise_doc_at_history_ordered(queries, title_embeddings, k)
-    return [titles[i] for i in best_k_idx]
+    if domain:
+        return [titles[i] for i in best_k_idx]
+    else:
+        return [(title_to_domain[titles[i]], titles[i]) for i in best_k_idx]
 
 
 
@@ -1039,7 +1045,7 @@ class MultiDoc2dial(datasets.GeneratorBasedBuilder):
                                 continue
 
                             queries = list(reversed(all_user_utterances))
-                            doc_ids = retriever_get_documents(domain, queries, k=1)
+                            doc_ids = retriever_get_documents(domain, queries)
 
                             for doc_rank, doc_id in enumerate(doc_ids):
                                 question_str = " ".join(list(reversed(all_prev_utterances))).strip()
@@ -1072,46 +1078,37 @@ class MultiDoc2dial(datasets.GeneratorBasedBuilder):
             logging.info("generating examples from = %s", filepath)
             doc_data = self._load_doc_data_rc_extra(filepath)
             with open(filepath, encoding="utf-8") as f:
-                dial_data = json.load(f)["dial_data"]
-                for domain, domain_dials in dial_data.items():
-                    docs = doc_data[domain]
-                    for dial in domain_dials:
-                        all_prev_utterances = []
-                        all_user_utterances = []
-                        for idx, turn in enumerate(dial["turns"]):
-                            all_prev_utterances.append(
-                                "\t{}: {}".format(turn["role"], turn["utterance"])
-                            )
-                            if turn["role"] == "agent":
-                                continue
-                            else:
-                                all_user_utterances.append(turn["utterance"])
+                dial_data = json.load(f)
+                docs = doc_data
+                for dial in dial_data:
+                    all_prev_utterances = []
+                    all_user_utterances = []
+                    for idx, turn in enumerate(dial["dial"]):
+                        all_prev_utterances.append(
+                            "\t{}: {}".format(turn["role"], turn["utterance"])
+                        )
+                        if turn["role"] == "agent":
+                            continue
+                        else:
+                            all_user_utterances.append(turn["utterance"])
 
-                            if idx + 1 < len(dial["turns"]):
-                                if dial["turns"][idx + 1]["role"] == "agent":
-                                    turn_to_predict = dial["turns"][idx + 1]
-                                else:
-                                    continue
-                            else:
-                                continue
+                        queries = list(reversed(all_user_utterances))
+                        doc_ids = retriever_get_documents(None, queries)
 
-                            queries = list(reversed(all_user_utterances))
-                            doc_ids = retriever_get_documents(domain, queries, k=1)
-
-                            for doc_rank, doc_id in enumerate(doc_ids):
-                                question_str = " ".join(list(reversed(all_prev_utterances))).strip()
-                                question = " ".join(question_str.split()[:MAX_Q_LEN])
-                                id_ = "{}_{}".format(dial["dial_id"], turn["turn_id"]) # For subtask1, the id should be this format.
-                                qa = {
-                                    "id": id_, # For subtask1, the id should be this format.
-                                    "title": doc_id,
-                                    "context": docs[doc_id]["doc_text"],
-                                    "only-question": turn["utterance"],    
-                                    "question": question,    
-                                    "domain": domain,
-                                    "doc-rank": doc_rank
-                                }
-                                yield id_, qa
+                        for doc_rank, (doc_domain, doc_id) in enumerate(doc_ids):
+                            question_str = " ".join(list(reversed(all_prev_utterances))).strip()
+                            question = " ".join(question_str.split()[:MAX_Q_LEN])
+                            id_ = "{}_{}".format(dial["id"], turn["turn_id"]) # For subtask1, the id should be this format.
+                            qa = {
+                                "id": id_, # For subtask1, the id should be this format.
+                                "title": doc_id,
+                                "context": docs[doc_domain][doc_id]["doc_text"],
+                                "only-question": turn["utterance"],    
+                                "question": question,    
+                                "domain": doc_domain,
+                                "doc-rank": doc_rank
+                            }
+                            yield id_, qa
 
         elif self.config.name == "multidoc2dial_rc_mddseen_test":
             """Load dialog data in the reading comprehension task setup, where context is the grounding document,
@@ -1150,7 +1147,7 @@ class MultiDoc2dial(datasets.GeneratorBasedBuilder):
                                 continue
 
                             queries = list(reversed(all_user_utterances))
-                            doc_ids = retriever_get_documents(domain, queries, k=1)
+                            doc_ids = retriever_get_documents(domain, queries)
 
                             for doc_rank, doc_id in enumerate(doc_ids):
                                 question_str = " ".join(list(reversed(all_prev_utterances))).strip()
@@ -1212,7 +1209,7 @@ class MultiDoc2dial(datasets.GeneratorBasedBuilder):
                                 continue
 
                             queries = list(reversed(all_user_utterances))
-                            doc_ids = retriever_get_documents(domain, queries, k=1)
+                            doc_ids = retriever_get_documents(domain, queries)
 
                             for doc_rank, doc_id in enumerate(doc_ids):
                                 question_str = " ".join(list(reversed(all_prev_utterances))).strip()
@@ -1274,7 +1271,7 @@ class MultiDoc2dial(datasets.GeneratorBasedBuilder):
                                 continue
 
                             queries = list(reversed(all_user_utterances))
-                            doc_ids = retriever_get_documents(domain, queries, k=1)
+                            doc_ids = retriever_get_documents(domain, queries)
 
                             for doc_rank, doc_id in enumerate(doc_ids):
                                 question_str = " ".join(list(reversed(all_prev_utterances))).strip()
