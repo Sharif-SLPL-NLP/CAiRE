@@ -1,3 +1,9 @@
+"""
+in the prediction phase 
+they only want the last agent utterance
+this file removes all the other utterances and only keeps the last one.
+"""
+
 import json
 
 with open("predictions.json", 'r') as f:

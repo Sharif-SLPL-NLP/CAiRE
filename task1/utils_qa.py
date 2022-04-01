@@ -23,6 +23,7 @@ from typing import Optional, Tuple
 
 import numpy as np
 from tqdm.auto import tqdm
+import sys
 
 from transformers import AutoTokenizer, AutoModel, AutoConfig
 from sklearn.feature_extraction.text import TfidfVectorizer
@@ -37,6 +38,12 @@ tokenizer_labse = AutoTokenizer.from_pretrained("setu4993/LaBSE")
 model_labse = AutoModel.from_pretrained("setu4993/LaBSE")
 
 logger = logging.getLogger(__name__)
+
+if any(['unseen' in item for item in sys.argv]):
+    DOC_FILEPATH = "/home/alavian/Documents/stvt/CAiRE/dataset/multidialdoc/dialdoc2022_sharedtask/MDD-UNSEEN/multidoc2dial_doc_cdccovid.json"
+    print("UNNNNNNNNNNNNNNNNNNNNNNSEEEEEEEEEEEEEEEEEEEEEEEN")
+else:
+    DOC_FILEPATH = "/home/alavian/Documents/stvt/CAiRE/dataset/multidialdoc/multidoc2dial/multidoc2dial_doc.json"
 
 tfidfVectorizer = None
 tfidf_wm = None
@@ -133,12 +140,14 @@ def final_postprocess_qa_predictions(
     output = collections.OrderedDict()
 
     #   Fitting TF-IDF
-    filepath = None #   TODO for ALI: what should be here?
-    doc_filepath = os.path.join(os.path.dirname(filepath), "multidoc2dial_doc.json")
-    tfIDF_fitting(doc_filepath)
+    # filepath = None #   TODO for ALI: what should be here?
+    global DOC_FILEPATH
+    # doc_filepath = os.path.join(os.path.dirname(filepath), "multidoc2dial_doc.json")
+    tfIDF_fitting(DOC_FILEPATH)
     
     for id in tqdm(predictions):
-        output[id] = get_best_answer_for_question(predictions[id]["predictions"], predictions[id]["question"])
+        output[id] = predictions[id]["predictions"][0]
+        # output[id] = get_best_answer_for_question(predictions[id]["predictions"], predictions[id]["question"])
         
     return output
 
