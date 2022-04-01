@@ -25,6 +25,7 @@ import numpy as np
 from tqdm.auto import tqdm
 
 from transformers import AutoTokenizer, AutoModel, AutoConfig
+from sklearn.feature_extraction.text import TfidfVectorizer
 import numpy as np
 import torch
 from torch.nn.functional import normalize
@@ -36,6 +37,29 @@ tokenizer_labse = AutoTokenizer.from_pretrained("setu4993/LaBSE")
 model_labse = AutoModel.from_pretrained("setu4993/LaBSE")
 
 logger = logging.getLogger(__name__)
+
+tfidfVectorizer = None
+tfidf_wm = None
+
+def tfIDF_fitting(path2doc) -> None:
+    global tfidfVectorizer, tfidf_wm
+
+    with open(path2doc, 'r') as f:
+        multidoc2dial_doc = json.load(f)
+    
+    doc_texts_train = []
+    for domain in multidoc2dial_doc['doc_data']:
+        for title in multidoc2dial_doc['doc_data'][domain]:
+            doc_texts_train.append(multidoc2dial_doc['doc_data'][domain]\
+                                          [title]['doc_text'].strip())
+    
+    tfidfVectorizer = TfidfVectorizer(strip_accents=None,
+                                    analyzer='char',
+                                    ngram_range=(2, 8),
+                                    norm='l2',
+                                    use_idf=True,
+                                    smooth_idf=True)
+    tfidf_wm = tfidfVectorizer.fit_transform(doc_texts_train)
 
 
 def get_embeddings(sentece):
@@ -55,7 +79,7 @@ def get_embeddings(sentece):
     return np.squeeze(np.array(embeddings.pooler_output))
 
 
-def get_best_answer_for_question(answers, question) -> str:
+def get_best_answer_for_question(answers, question, beta=1) -> str:
     """
     answers: List
     question: Str
@@ -67,8 +91,12 @@ def get_best_answer_for_question(answers, question) -> str:
     answer_sim = list(map(lambda x: np.dot(x, question_embd) /
                             (np.linalg.norm(question_embd) * np.linalg.norm(x)),
                             answers_embds))
-    answer_sim = np.array(answer_sim)
-    return answers[np.argmax(answer_sim)]
+    question_trasform = np.squeeze(np.asarray(tfidf_wm @ tfidfVectorizer.transform([question]).todense().T))
+    tfidf_sim = list(map(lambda x: np.dot(x, question_trasform) /
+                            (np.linalg.norm(question_trasform) * np.linalg.norm(x)),
+                            np.squeeze(np.asarray(tfidf_wm @ tfidfVectorizer.transform(answers).todense()).T)).T)
+    sim = np.array(answer_sim) + beta * np.array(tfidf_sim)
+    return answers[np.argmax(sim)]
 
 
 def final_postprocess_qa_predictions(
@@ -104,6 +132,11 @@ def final_postprocess_qa_predictions(
 
     output = collections.OrderedDict()
 
+    #   Fitting TF-IDF
+    filepath = None #   TODO for ALI: what should be here?
+    doc_filepath = os.path.join(os.path.dirname(filepath), "multidoc2dial_doc.json")
+    tfIDF_fitting(doc_filepath)
+    
     for id in tqdm(predictions):
         output[id] = get_best_answer_for_question(predictions[id]["predictions"], predictions[id]["question"])
         

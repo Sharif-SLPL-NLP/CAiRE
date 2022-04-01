@@ -29,6 +29,7 @@ import datasets
 
 from typing import List
 from typing import Tuple
+from sklearn.feature_extraction.text import TfidfVectorizer
 from transformers import AutoTokenizer, AutoModel, AutoConfig
 import numpy as np
 import torch
@@ -44,11 +45,14 @@ model_labse = AutoModel.from_pretrained("setu4993/LaBSE")
 words2IDF = {}
 title_to_embeddings = {}
 title_to_domain = {}
+tfidfVectorizer = None
+tfidf_wm = None
 N_DOC = 488
 
 
 def retriever_load_docs(path2doc) -> None:
-    global title_to_embeddings, title_to_domain, words2IDF, N_DOC
+    global title_to_embeddings, title_to_domain, words2IDF
+    global tfidfVectorizer, tfidf_wm, N_DOC
 
     with open(path2doc, 'r') as f:
         multidoc2dial_doc = json.load(f)
@@ -61,13 +65,21 @@ def retriever_load_docs(path2doc) -> None:
             doc_texts_train.append(multidoc2dial_doc['doc_data'][domain]\
                                           [title]['doc_text'].strip())
             title_to_domain[title] = domain
-    titles = list(set(doc_title_train))
+    titles = doc_title_train
     N_DOC = len(titles)
     
     TRAIN_SIZE = len(titles)
     for title in tqdm(titles, desc="[Loading documents - title embedding]"):
         title_to_embeddings[title] = get_embeddings(title)
     
+    tfidfVectorizer = TfidfVectorizer(strip_accents=None,
+                                    analyzer='char',
+                                    ngram_range=(2, 8),
+                                    norm='l2',
+                                    use_idf=True,
+                                    smooth_idf=True)
+    tfidf_wm = tfidfVectorizer.fit_transform(doc_texts_train)
+
     words = set()
     doc_texts_train_tokenized = []
     for doc in doc_texts_train:
@@ -118,7 +130,7 @@ def calc_idf_score(sentence) -> float:
     return score / len(tokenzied_sentence)
 
 
-def predict_labelwise_doc_at_history_ordered(queries, title_embeddings, k=1) -> Tuple[List[float], List[str]]:
+def predict_labelwise_doc_at_history_ordered(queries, title_embeddings, k=1, alpha=10) -> Tuple[List[float], List[str]]:
     """
     Predict which document is matched to the given query.
 
@@ -130,7 +142,8 @@ def predict_labelwise_doc_at_history_ordered(queries, title_embeddings, k=1) -> 
     :type k: int 
     :return: return the document names and accuracies
     """
-    similarities = np.array(list(map(lambda x: 0.0, title_embeddings)))
+    idf_score = np.array(list(map(lambda x: 0.0, title_embeddings)))
+    tfidf_score = np.array(list(map(lambda x: 0.0, title_embeddings)))
     coef_sum = 0
     for i, query in enumerate(queries):
         query_embd = get_embeddings(query)
@@ -138,15 +151,16 @@ def predict_labelwise_doc_at_history_ordered(queries, title_embeddings, k=1) -> 
                             (np.linalg.norm(query_embd) * np.linalg.norm(x)),
                             title_embeddings))
         query_sim = np.array(query_sim)
-
         coef = 2**(-i) * calc_idf_score(query)
         coef_sum += coef
-        similarities += coef * query_sim
 
-    similarities = similarities / coef_sum
-    best_k_idx = similarities.argsort()[::-1][:k]
-    accuracy = similarities[best_k_idx]
-    return (accuracy, best_k_idx)
+        idf_score += coef * query_sim
+        tfidf_score += coef * np.squeeze(np.asarray(tfidf_wm @ tfidfVectorizer.transform([query]).todense().T))
+
+    scores = (idf_score + alpha * tfidf_score) / coef_sum
+    best_k_idx = scores.argsort()[::-1][:k]
+    scores = scores[best_k_idx]
+    return (scores, best_k_idx)
 
 
 def retriever_get_documents(domain, queries, k=1) -> List[str]:
