@@ -39,9 +39,10 @@ model_labse = AutoModel.from_pretrained("setu4993/LaBSE")
 logger = logging.getLogger(__name__)
 
 tfidfVectorizer = None
+tfidf_wm = None
 
 def tfIDF_fitting(path2doc) -> None:
-    global tfidfVectorizer
+    global tfidfVectorizer, tfidf_wm
 
     with open(path2doc, 'r') as f:
         multidoc2dial_doc = json.load(f)
@@ -90,10 +91,10 @@ def get_best_answer_for_question(answers, question, beta=1) -> str:
     answer_sim = list(map(lambda x: np.dot(x, question_embd) /
                             (np.linalg.norm(question_embd) * np.linalg.norm(x)),
                             answers_embds))
-    question_trasform = tfidfVectorizer.transform(question)
+    question_trasform = np.squeeze(np.asarray(tfidf_wm @ tfidfVectorizer.transform([question]).todense().T))
     tfidf_sim = list(map(lambda x: np.dot(x, question_trasform) /
                             (np.linalg.norm(question_trasform) * np.linalg.norm(x)),
-                            tfidfVectorizer.transform(answers).todense()))
+                            np.squeeze(np.asarray(tfidf_wm @ tfidfVectorizer.transform(answers).todense()).T)).T)
     sim = np.array(answer_sim) + beta * np.array(tfidf_sim)
     return answers[np.argmax(sim)]
 
