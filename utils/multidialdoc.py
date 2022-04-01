@@ -29,6 +29,7 @@ import datasets
 
 from typing import List
 from typing import Tuple
+from sklearn.feature_extraction.text import TfidfVectorizer
 from transformers import AutoTokenizer, AutoModel, AutoConfig
 import numpy as np
 import torch
@@ -44,11 +45,14 @@ model_labse = AutoModel.from_pretrained("setu4993/LaBSE")
 words2IDF = {}
 title_to_embeddings = {}
 title_to_domain = {}
+tfidfVectorizer = None
+tfidf_wm = None
 N_DOC = 488
 
 
 def retriever_load_docs(path2doc) -> None:
-    global title_to_embeddings, title_to_domain, words2IDF, N_DOC
+    global title_to_embeddings, title_to_domain, words2IDF
+    global tfidfVectorizer, tfidf_wm, N_DOC
 
     with open(path2doc, 'r') as f:
         multidoc2dial_doc = json.load(f)
@@ -61,13 +65,21 @@ def retriever_load_docs(path2doc) -> None:
             doc_texts_train.append(multidoc2dial_doc['doc_data'][domain]\
                                           [title]['doc_text'].strip())
             title_to_domain[title] = domain
-    titles = list(set(doc_title_train))
+    titles = doc_title_train
     N_DOC = len(titles)
     
     TRAIN_SIZE = len(titles)
     for title in tqdm(titles, desc="[Loading documents - title embedding]"):
         title_to_embeddings[title] = get_embeddings(title)
     
+    tfidfVectorizer = TfidfVectorizer(strip_accents=None,
+                                    analyzer='char',
+                                    ngram_range=(2, 8),
+                                    norm='l2',
+                                    use_idf=True,
+                                    smooth_idf=True)
+    tfidf_wm = tfidfVectorizer.fit_transform(doc_texts_train)
+
     words = set()
     doc_texts_train_tokenized = []
     for doc in doc_texts_train:
