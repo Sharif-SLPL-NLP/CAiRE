@@ -55,7 +55,7 @@ def get_embeddings(sentece):
     return np.squeeze(np.array(embeddings.pooler_output))
 
 
-def get_best_answer_for_question(answers, question) -> str:
+def get_best_answer_for_question(answers, question, beta=1) -> str:
     """
     answers: List
     question: Str
@@ -67,8 +67,12 @@ def get_best_answer_for_question(answers, question) -> str:
     answer_sim = list(map(lambda x: np.dot(x, question_embd) /
                             (np.linalg.norm(question_embd) * np.linalg.norm(x)),
                             answers_embds))
-    answer_sim = np.array(answer_sim)
-    return answers[np.argmax(answer_sim)]
+    question_trasform = tfidfVectorizer.transform(question)
+    tfidf_sim = list(map(lambda x: np.dot(x, question_trasform) /
+                            (np.linalg.norm(question_trasform) * np.linalg.norm(x)),
+                            tfidfVectorizer.transform(answers).todense()))
+    sim = np.array(answer_sim) + beta * np.array(tfidf_sim)
+    return answers[np.argmax(sim)]
 
 
 def final_postprocess_qa_predictions(
