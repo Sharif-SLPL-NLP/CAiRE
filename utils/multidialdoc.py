@@ -130,7 +130,7 @@ def calc_idf_score(sentence) -> float:
     return score / len(tokenzied_sentence)
 
 
-def predict_labelwise_doc_at_history_ordered(queries, title_embeddings, k=1) -> Tuple[List[float], List[str]]:
+def predict_labelwise_doc_at_history_ordered(queries, title_embeddings, k=1, alpha=10) -> Tuple[List[float], List[str]]:
     """
     Predict which document is matched to the given query.
 
@@ -142,7 +142,8 @@ def predict_labelwise_doc_at_history_ordered(queries, title_embeddings, k=1) -> 
     :type k: int 
     :return: return the document names and accuracies
     """
-    similarities = np.array(list(map(lambda x: 0.0, title_embeddings)))
+    idf_score = np.array(list(map(lambda x: 0.0, title_embeddings)))
+    tfidf_score = np.array(list(map(lambda x: 0.0, title_embeddings)))
     coef_sum = 0
     for i, query in enumerate(queries):
         query_embd = get_embeddings(query)
@@ -150,15 +151,16 @@ def predict_labelwise_doc_at_history_ordered(queries, title_embeddings, k=1) -> 
                             (np.linalg.norm(query_embd) * np.linalg.norm(x)),
                             title_embeddings))
         query_sim = np.array(query_sim)
-
         coef = 2**(-i) * calc_idf_score(query)
         coef_sum += coef
-        similarities += coef * query_sim
 
-    similarities = similarities / coef_sum
-    best_k_idx = similarities.argsort()[::-1][:k]
-    accuracy = similarities[best_k_idx]
-    return (accuracy, best_k_idx)
+        idf_score += coef * query_sim
+        tfidf_score += coef * np.squeeze(np.asarray(tfidf_wm @ tfidfVectorizer.transform([query]).todense().T))
+
+    scores = (idf_score + alpha * tfidf_score) / coef_sum
+    best_k_idx = scores.argsort()[::-1][:k]
+    scores = scores[best_k_idx]
+    return (scores, best_k_idx)
 
 
 def retriever_get_documents(domain, queries, k=1) -> List[str]:
