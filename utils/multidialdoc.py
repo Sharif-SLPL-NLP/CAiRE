@@ -127,6 +127,8 @@ def calc_idf_score(sentence) -> float:
             score += words2IDF[token]
         else:
             score += np.log(N_DOC)
+    if len(tokenzied_sentence) == 0:
+        return 0
     return score / len(tokenzied_sentence)
 
 
