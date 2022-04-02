@@ -1119,7 +1119,8 @@ class MultiDoc2dial(datasets.GeneratorBasedBuilder):
                         for doc_rank, (doc_domain, doc_id) in enumerate(doc_ids):
                             question_str = " ".join(list(reversed(all_prev_utterances))).strip()
                             question = " ".join(question_str.split()[:MAX_Q_LEN])
-                            id_ = "{}_{}".format(dial["id"], turn["turn_id"]) # For subtask1, the id should be this format.
+                            id_ = "{}_{}_{}".format(dial["id"].split('_')[0], turn["turn_id"], doc_rank) # For subtask1, the id should be this format.
+                            # id_ = "{}_{}".format(dial["id"], turn["turn_id"]) # For subtask1, the id should be this format.
                             qa = {
                                 "id": id_, # For subtask1, the id should be this format.
                                 "title": doc_id,

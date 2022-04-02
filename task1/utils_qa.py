@@ -128,25 +128,23 @@ def final_postprocess_qa_predictions(
     # }
 
     for id, index in tqdm(example_id_to_index.items()):
-        if id not in predictions:
-            predictions[id] = {
+        new_id = "{}_{}".format(* id.split('_')[0:2])
+        if new_id not in predictions:
+            predictions[new_id] = {
                 "question": examples[index]["only-question"],
                 "predictions": [all_predictions[id]],
             }
         else:
-            predictions[id]["predictions"].append([all_predictions[id]])
+            predictions[new_id]["predictions"].append([all_predictions[id]])
 
     output = collections.OrderedDict()
 
     #   Fitting TF-IDF
-    # filepath = None #   TODO for ALI: what should be here?
     global DOC_FILEPATH
-    # doc_filepath = os.path.join(os.path.dirname(filepath), "multidoc2dial_doc.json")
     tfIDF_fitting(DOC_FILEPATH)
     
-    for id in tqdm(predictions):
-        output[id] = predictions[id]["predictions"][0]
-        # output[id] = get_best_answer_for_question(predictions[id]["predictions"], predictions[id]["question"])
+    for id in tqdm(predictions, desc="getting best answer for each question"):
+        output[id] = get_best_answer_for_question(predictions[id]["predictions"], predictions[id]["question"])
         
     return output
 
