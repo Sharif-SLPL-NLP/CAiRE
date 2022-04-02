@@ -101,7 +101,7 @@ def get_best_answer_for_question(answers, question, beta=1) -> str:
     question_trasform = np.squeeze(np.asarray(tfidf_wm @ tfidfVectorizer.transform([question]).todense().T))
     tfidf_sim = list(map(lambda x: np.dot(x, question_trasform) /
                             (np.linalg.norm(question_trasform) * np.linalg.norm(x)),
-                            np.squeeze(np.asarray(tfidf_wm @ tfidfVectorizer.transform(answers).todense()).T)).T)
+                            np.squeeze(np.asarray(tfidf_wm @ tfidfVectorizer.transform(answers).todense().T)).T))
     sim = np.array(answer_sim) + beta * np.array(tfidf_sim)
     return answers[np.argmax(sim)]
 
