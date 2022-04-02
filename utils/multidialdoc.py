@@ -165,7 +165,7 @@ def predict_labelwise_doc_at_history_ordered(queries, title_embeddings, k=1, alp
     return (scores, best_k_idx)
 
 
-def retriever_get_documents(domain, queries, k=2) -> List[str]:
+def retriever_get_documents(domain, queries, k=3) -> List[str]:
     "returns list of related document IDs"
     if domain:
         titles = [title for title in title_to_embeddings.keys() if title_to_domain[title] == domain]
@@ -623,8 +623,8 @@ class MultiDoc2dial(datasets.GeneratorBasedBuilder):
                     name=datasets.Split.VALIDATION,
                     gen_kwargs={
                         "filepath": os.path.join(
-                            data_dir, "multidialdoc/multidoc2dial/multidoc2dial_dial_test.json"
-                            # data_dir, "multidialdoc/multidoc2dial/multidoc2dial_dial_validation.json"
+                            # data_dir, "multidialdoc/multidoc2dial/multidoc2dial_dial_test.json"
+                            data_dir, "multidialdoc/multidoc2dial/multidoc2dial_dial_validation.json"
                         ),
                     },
                 )
@@ -1060,8 +1060,8 @@ class MultiDoc2dial(datasets.GeneratorBasedBuilder):
                             else:
                                 continue
 
-                            # queries = list(reversed(all_prev_utterances))
-                            queries = list(reversed(all_user_utterances))
+                            queries = list(reversed(all_prev_utterances))
+                            # queries = list(reversed(all_user_utterances))
                             doc_ids = retriever_get_documents(None, queries)
 
                             for doc_rank, (domain, doc_id) in enumerate(doc_ids):
@@ -1114,7 +1114,8 @@ class MultiDoc2dial(datasets.GeneratorBasedBuilder):
                         else:
                             all_user_utterances.append(turn["utterance"])
 
-                        queries = list(reversed(all_user_utterances))
+                        queries = list(reversed(all_prev_utterances))
+                        # queries = list(reversed(all_user_utterances))
                         doc_ids = retriever_get_documents(None, queries)
 
                         for doc_rank, (doc_domain, doc_id) in enumerate(doc_ids):

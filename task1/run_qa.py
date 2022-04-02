@@ -196,6 +196,9 @@ class ExtraArguments:
     only_predict: Optional[str] = field(
         default=None, metadata={"help": "The path to the prediction file."}
     )
+    generative: Optional[bool] = field(
+        default=None, metadata={"help": "The path to the prediction file."}
+    )
 
 
 def main():

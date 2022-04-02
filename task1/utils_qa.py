@@ -25,7 +25,7 @@ import numpy as np
 from tqdm.auto import tqdm
 import sys
 
-from transformers import AutoTokenizer, AutoModel, AutoConfig
+from transformers import AutoTokenizer, AutoModel, AutoConfig, AutoModelWithLMHead, AutoTokenizer
 from sklearn.feature_extraction.text import TfidfVectorizer
 import numpy as np
 import torch
@@ -33,6 +33,10 @@ from torch.nn.functional import normalize
 import pickle
 import json
 from tqdm import tqdm
+
+answer_max_length = 30
+tokenizer_t5 = AutoTokenizer.from_pretrained("mrm8488/t5-base-finetuned-summarize-news")
+model_t5 = AutoModelWithLMHead.from_pretrained("mrm8488/t5-base-finetuned-summarize-news")
 
 tokenizer_labse = AutoTokenizer.from_pretrained("setu4993/LaBSE")
 model_labse = AutoModel.from_pretrained("setu4993/LaBSE")
@@ -43,6 +47,11 @@ if any(['unseen' in item for item in sys.argv]):
     DOC_FILEPATH = "/home/alavian/Documents/stvt/CAiRE/dataset/multidialdoc/dialdoc2022_sharedtask/MDD-UNSEEN/multidoc2dial_doc_cdccovid.json"
 else:
     DOC_FILEPATH = "/home/alavian/Documents/stvt/CAiRE/dataset/multidialdoc/multidoc2dial/multidoc2dial_doc.json"
+
+if '--generative' in sys.argv:
+    GENERATIVE = True
+else:
+    GENERATIVE = False
 
 tfidfVectorizer = None
 tfidf_wm = None
@@ -105,6 +114,14 @@ def get_best_answer_for_question(answers, question, beta=1) -> str:
     return answers[np.argmax(sim)]
 
 
+def summarize(predictions, k=3):
+    text = ".".join(predictions[:k])
+    input_ids = tokenizer_t5.encode(text, return_tensors="pt", add_special_tokens=True)
+    generated_ids = model_t5.generate(input_ids=input_ids, num_beams=2, max_length=answer_max_length,  repetition_penalty=2.5, length_penalty=1.0, early_stopping=True)
+    preds = [tokenizer_t5.decode(g, skip_special_tokens=True, clean_up_tokenization_spaces=True) for g in generated_ids]
+    return preds[0]
+
+
 def final_postprocess_qa_predictions(
     example_id_to_index, 
     examples, 
@@ -144,7 +161,10 @@ def final_postprocess_qa_predictions(
     tfIDF_fitting(DOC_FILEPATH)
     
     for id in tqdm(predictions, desc="getting best answer for each question"):
-        output[id] = get_best_answer_for_question(predictions[id]["predictions"], predictions[id]["question"])
+        if GENERATIVE:
+            output[id] = summarize(predictions[id]["predictions"])
+        else:
+            output[id] = get_best_answer_for_question(predictions[id]["predictions"], predictions[id]["question"])
         
     return output
 
