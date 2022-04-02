@@ -197,7 +197,7 @@ class ExtraArguments:
         default=None, metadata={"help": "The path to the prediction file."}
     )
     generative: Optional[bool] = field(
-        default=None, metadata={"help": "The path to the prediction file."}
+        default=False, metadata={"help": "The path to the prediction file."}
     )
 
 
