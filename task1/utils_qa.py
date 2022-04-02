@@ -41,7 +41,6 @@ logger = logging.getLogger(__name__)
 
 if any(['unseen' in item for item in sys.argv]):
     DOC_FILEPATH = "/home/alavian/Documents/stvt/CAiRE/dataset/multidialdoc/dialdoc2022_sharedtask/MDD-UNSEEN/multidoc2dial_doc_cdccovid.json"
-    print("UNNNNNNNNNNNNNNNNNNNNNNSEEEEEEEEEEEEEEEEEEEEEEEN")
 else:
     DOC_FILEPATH = "/home/alavian/Documents/stvt/CAiRE/dataset/multidialdoc/multidoc2dial/multidoc2dial_doc.json"
 
