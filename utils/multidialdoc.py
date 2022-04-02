@@ -165,7 +165,7 @@ def predict_labelwise_doc_at_history_ordered(queries, title_embeddings, k=1, alp
     return (scores, best_k_idx)
 
 
-def retriever_get_documents(domain, queries, k=1) -> List[str]:
+def retriever_get_documents(domain, queries, k=2) -> List[str]:
     "returns list of related document IDs"
     if domain:
         titles = [title for title in title_to_embeddings.keys() if title_to_domain[title] == domain]
@@ -623,8 +623,8 @@ class MultiDoc2dial(datasets.GeneratorBasedBuilder):
                     name=datasets.Split.VALIDATION,
                     gen_kwargs={
                         "filepath": os.path.join(
-                            # data_dir, "multidialdoc/multidoc2dial/multidoc2dial_dial_test.json"
-                            data_dir, "multidialdoc/multidoc2dial/multidoc2dial_dial_validation.json"
+                            data_dir, "multidialdoc/multidoc2dial/multidoc2dial_dial_test.json"
+                            # data_dir, "multidialdoc/multidoc2dial/multidoc2dial_dial_validation.json"
                         ),
                     },
                 )
@@ -1060,17 +1060,18 @@ class MultiDoc2dial(datasets.GeneratorBasedBuilder):
                             else:
                                 continue
 
+                            # queries = list(reversed(all_prev_utterances))
                             queries = list(reversed(all_user_utterances))
-                            doc_ids = retriever_get_documents(domain, queries)
+                            doc_ids = retriever_get_documents(None, queries)
 
-                            for doc_rank, doc_id in enumerate(doc_ids):
+                            for doc_rank, (domain, doc_id) in enumerate(doc_ids):
                                 question_str = " ".join(list(reversed(all_prev_utterances))).strip()
                                 question = " ".join(question_str.split()[:MAX_Q_LEN])
-                                id_ = "{}_{}".format(dial["dial_id"], turn["turn_id"]) # For subtask1, the id should be this format.
+                                id_ = "{}_{}_{}".format(dial["dial_id"], turn["turn_id"], doc_rank) # For subtask1, the id should be this format.
                                 qa = {
                                     "id": id_, # For subtask1, the id should be this format.
                                     "title": doc_id,
-                                    "context": docs[doc_id]["doc_text"],
+                                    "context": doc_data[domain][doc_id]["doc_text"],
                                     "only-question": turn["utterance"],    
                                     "question": question,    
                                     "answers": [],  # For subtask1, "answers" contains the grounding annotations for evaluation.
