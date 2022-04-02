@@ -135,7 +135,7 @@ def final_postprocess_qa_predictions(
                 "predictions": [all_predictions[id]],
             }
         else:
-            predictions[new_id]["predictions"].append([all_predictions[id]])
+            predictions[new_id]["predictions"].append(all_predictions[id])
 
     output = collections.OrderedDict()
 
