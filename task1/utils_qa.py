@@ -167,7 +167,7 @@ def get_best_answer_for_question_history(answers, questions, beta=1) -> str:
         answer_sim += coef * answer_score
         tfidf_sim += coef * tfidf_score
 
-    sim = answer_sim + beta * tfidf_sim
+    sim = (answer_sim + beta * tfidf_sim) / coef_sum
     return answers[np.argmax(sim)]
 
 
