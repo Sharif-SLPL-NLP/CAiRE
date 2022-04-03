@@ -19,7 +19,7 @@ import collections
 import json
 import logging
 import os
-from typing import Optional, Tuple
+from typing import Optional, OrderedDict, Tuple
 
 import numpy as np
 from tqdm.auto import tqdm
@@ -125,7 +125,8 @@ def summarize(predictions, k=3):
 def final_postprocess_qa_predictions(
     example_id_to_index, 
     examples, 
-    all_predictions
+    all_predictions,
+    initial_predictions=None
 ):
     """
     remove duplicate answers for questions by getting attention between questions and the answers
@@ -136,36 +137,47 @@ def final_postprocess_qa_predictions(
 
     Returns a dict of final predictions Dict{id: prediction_text}
     """
-    predictions = collections.OrderedDict()
-    # {
-        # id
-            # question:
-            # predictions = []
-            # answer?
-    # }
-
-    for id, index in tqdm(example_id_to_index.items()):
-        new_id = "{}_{}".format(* id.split('_')[0:2])
-        if new_id not in predictions:
-            predictions[new_id] = {
-                "question": examples[index]["only-question"],
-                "predictions": [all_predictions[id]],
-            }
-        else:
-            predictions[new_id]["predictions"].append(all_predictions[id])
-
-    output = collections.OrderedDict()
-
-    #   Fitting TF-IDF
-    global DOC_FILEPATH
-    tfIDF_fitting(DOC_FILEPATH)
     
-    for id in tqdm(predictions, desc="getting best answer for each question"):
-        if GENERATIVE:
-            output[id] = summarize(predictions[id]["predictions"])
-        else:
-            output[id] = get_best_answer_for_question(predictions[id]["predictions"], predictions[id]["question"])
+    if initial_predictions:
+        id_best_probs = OrderedDict()
+        output = OrderedDict()
+        for id, index in tqdm(example_id_to_index.items()):
+            new_id = "{}_{}".format(* id.split('_')[0:2])
+            initial_prediction = initial_predictions[index]
+            if new_id not in output:
+                output[new_id] = all_predictions[id]
+                id_best_probs[new_id] = initial_prediction['probability']
+            else:
+                if id_best_probs[new_id] > initial_prediction['probability']:
+                    continue
+                else:
+                    output[new_id] = all_predictions[id]
+                    id_best_probs[new_id] = initial_prediction['probability']
+    else:
+        predictions = collections.OrderedDict()
+        # { # id : {"question": "", "predictions": [""]} }
+        for id, index in tqdm(example_id_to_index.items()):
+            new_id = "{}_{}".format(* id.split('_')[0:2])
+            if new_id not in predictions:
+                predictions[new_id] = {
+                    "question": examples[index]["only-question"],
+                    "predictions": [all_predictions[id]],
+                }
+            else:
+                predictions[new_id]["predictions"].append(all_predictions[id])
+
+        output = collections.OrderedDict()
+
+        #   Fitting TF-IDF
+        global DOC_FILEPATH
+        tfIDF_fitting(DOC_FILEPATH)
         
+        for id in tqdm(predictions, desc="getting best answer for each question"):
+            if GENERATIVE:
+                output[id] = summarize(predictions[id]["predictions"])
+            else:
+                output[id] = get_best_answer_for_question(predictions[id]["predictions"], predictions[id]["question"])
+            
     return output
 
 
@@ -368,7 +380,7 @@ def postprocess_qa_predictions(
         ]
 
     if len(next(iter(example_id_to_index)).split('_')) == 3:
-        all_predictions = final_postprocess_qa_predictions(example_id_to_index, examples, all_predictions)
+        all_predictions = final_postprocess_qa_predictions(example_id_to_index, examples, all_predictions, initial_predictions=predictions)
 
     # If we have an output_dir, let's save all those dicts.
     if output_dir is not None:
