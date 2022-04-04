@@ -55,9 +55,12 @@ else:
 
 tfidfVectorizer = None
 tfidf_wm = None
+N_DOC = 488
+words2IDF = None
 
 def tfIDF_fitting(path2doc) -> None:
-    global tfidfVectorizer, tfidf_wm
+    global tfidfVectorizer, tfidf_wm, N_DOC
+    global words2IDF
 
     with open(path2doc, 'r') as f:
         multidoc2dial_doc = json.load(f)
@@ -67,7 +70,8 @@ def tfIDF_fitting(path2doc) -> None:
         for title in multidoc2dial_doc['doc_data'][domain]:
             doc_texts_train.append(multidoc2dial_doc['doc_data'][domain]\
                                           [title]['doc_text'].strip())
-    
+    N_DOC = len(doc_texts_train)
+
     tfidfVectorizer = TfidfVectorizer(strip_accents=None,
                                     analyzer='char',
                                     ngram_range=(2, 8),
@@ -75,6 +79,20 @@ def tfIDF_fitting(path2doc) -> None:
                                     use_idf=True,
                                     smooth_idf=True)
     tfidf_wm = tfidfVectorizer.fit_transform(doc_texts_train)
+    
+    words = set()
+    doc_texts_train_tokenized = []
+    for doc in doc_texts_train:
+        tokenized_doc = [s.lower() for s in tokenizer_labse.tokenize(doc)]
+        doc_texts_train_tokenized.append(tokenized_doc) 
+        words = set(tokenized_doc).union(words)
+    
+    for word in tqdm(words, desc="[Loading documents - IDF scores]"):
+        n_word = 0
+        for doc in doc_texts_train_tokenized:
+            if word in doc:
+                n_word += 1
+        words2IDF[word] = np.log(N_DOC / (n_word + 1))
 
 
 def get_embeddings(sentece):
@@ -92,6 +110,65 @@ def get_embeddings(sentece):
         embeddings = model_labse(**tokenized)
     
     return np.squeeze(np.array(embeddings.pooler_output))
+
+
+def calc_idf_score(sentence) -> float:
+    """
+    Calculate the mean idf score for given sentence.
+
+    :param sentence: input sentence
+    :type sentence: str
+    :return: mean idf score of sentence token
+    """
+    tokenzied_sentence = [s.lower() for s in tokenizer_labse.tokenize(sentence)]
+    score = 0
+    for token in tokenzied_sentence:
+        if token in words2IDF:
+            score += words2IDF[token]
+        else:
+            score += np.log(N_DOC)
+    if len(tokenzied_sentence) == 0:
+        return 0
+    return score / len(tokenzied_sentence)
+
+
+def get_best_answer_for_question_history(answers, questions, beta=1) -> str:
+    """
+    answers: List
+    questions: List
+
+    Returns answer: Str
+    """
+    if isinstance(questions, str):
+        questions = [questions]
+    answer_sim = np.array(list(map(lambda x: 0.0, answers)))
+    tfidf_sim = np.array(list(map(lambda x: 0.0, answers)))
+
+    coef_sum = 0
+    span_vecs = np.squeeze(np.asarray(tfidf_wm @ tfidfVectorizer.transform(answers).todense().T)).T
+    answers_embds = list(map(get_embeddings, answers))
+    
+    for i, question in enumerate(questions):
+        question_embd = get_embeddings(question)
+        question_trasform = np.squeeze(np.asarray(tfidf_wm @ tfidfVectorizer.transform([question]).todense().T))
+
+        answer_score = list(map(lambda x: np.dot(x, question_embd) /
+                            (np.linalg.norm(question_embd) * np.linalg.norm(x)),
+                            answers_embds))
+        answer_score = np.array(answer_score)
+        tfidf_score = list(map(lambda x: np.dot(x, question_trasform) /
+                            (np.linalg.norm(question_trasform) * np.linalg.norm(x)),
+                            span_vecs))
+        tfidf_score = np.array(tfidf_sim)
+
+        coef = 2**(-i) * calc_idf_score(question)
+        coef_sum += coef
+
+        answer_sim += coef * answer_score
+        tfidf_sim += coef * tfidf_score
+
+    sim = (answer_sim + beta * tfidf_sim) / coef_sum
+    return answers[np.argmax(sim)]
 
 
 def get_best_answer_for_question(answers, question, beta=1) -> str:
