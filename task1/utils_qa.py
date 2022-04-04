@@ -126,7 +126,7 @@ def final_postprocess_qa_predictions(
     example_id_to_index, 
     examples, 
     all_predictions,
-    initial_predictions=None
+    predprobs=None
 ):
     """
     remove duplicate answers for questions by getting attention between questions and the answers
@@ -137,22 +137,20 @@ def final_postprocess_qa_predictions(
 
     Returns a dict of final predictions Dict{id: prediction_text}
     """
-    
-    if initial_predictions:
+    if predprobs:
         id_best_probs = OrderedDict()
         output = OrderedDict()
         for id, index in tqdm(example_id_to_index.items()):
             new_id = "{}_{}".format(* id.split('_')[0:2])
-            initial_prediction = initial_predictions[index]
             if new_id not in output:
                 output[new_id] = all_predictions[id]
-                id_best_probs[new_id] = initial_prediction['probability']
+                id_best_probs[new_id] = predprobs[id]
             else:
-                if id_best_probs[new_id] > initial_prediction['probability']:
+                if id_best_probs[new_id] > predprobs[id]:
                     continue
                 else:
                     output[new_id] = all_predictions[id]
-                    id_best_probs[new_id] = initial_prediction['probability']
+                    id_best_probs[new_id] = predprobs[id]
     else:
         predictions = collections.OrderedDict()
         # { # id : {"question": "", "predictions": [""]} }
@@ -248,6 +246,7 @@ def postprocess_qa_predictions(
     logger.setLevel(logging.INFO if is_world_process_zero else logging.WARN)
     logger.info(f"Post-processing {len(examples)} example predictions split into {len(features)} features.")
 
+    predprobs = {}
     # Let's loop over all the examples!
     for example_index, example in enumerate(tqdm(examples)):
         # Those are the indices of the features associated to the current example.
@@ -337,6 +336,7 @@ def postprocess_qa_predictions(
         # the LogSumExp trick).
         scores = np.array([pred.pop("score") for pred in predictions])
         exp_scores = np.exp(scores - np.max(scores))
+        sum_exp_scores = exp_scores.sum()
         probs = exp_scores / exp_scores.sum()
 
         # Include the probabilities in our predictions.
@@ -379,8 +379,10 @@ def postprocess_qa_predictions(
             for pred in predictions
         ]
 
+        predprobs[example["id"]] = predictions[0]["probability"]
+
     if len(next(iter(example_id_to_index)).split('_')) == 3:
-        all_predictions = final_postprocess_qa_predictions(example_id_to_index, examples, all_predictions, initial_predictions=predictions)
+        all_predictions = final_postprocess_qa_predictions(example_id_to_index, examples, all_predictions)
 
     # If we have an output_dir, let's save all those dicts.
     if output_dir is not None:

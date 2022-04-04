@@ -165,7 +165,7 @@ def predict_labelwise_doc_at_history_ordered(queries, title_embeddings, k=1, alp
     return (scores, best_k_idx)
 
 
-def retriever_get_documents(domain, queries, k=3) -> List[str]:
+def retriever_get_documents(domain, queries, k=2) -> List[str]:
     "returns list of related document IDs"
     if domain:
         titles = [title for title in title_to_embeddings.keys() if title_to_domain[title] == domain]
@@ -1114,22 +1114,22 @@ class MultiDoc2dial(datasets.GeneratorBasedBuilder):
                         else:
                             all_user_utterances.append(turn["utterance"])
 
-                        queries = list(reversed(all_prev_utterances))
                         # queries = list(reversed(all_user_utterances))
-                        doc_ids = retriever_get_documents(None, queries)
-
-                        for doc_rank, (doc_domain, doc_id) in enumerate(doc_ids):
-                            question_str = " ".join(list(reversed(all_prev_utterances))).strip()
-                            question = " ".join(question_str.split()[:MAX_Q_LEN])
-                            id_ = "{}_{}_{}".format(dial["id"].split('_')[0], turn["turn_id"], doc_rank) # For subtask1, the id should be this format.
-                            # id_ = "{}_{}".format(dial["id"], turn["turn_id"]) # For subtask1, the id should be this format.
-                            qa = {
-                                "id": id_, # For subtask1, the id should be this format.
-                                "title": doc_id,
-                                "context": docs[doc_domain][doc_id]["doc_text"],
-                                "only-question": turn["utterance"],    
-                                "question": question,    
-                                "domain": doc_domain,
-                                "doc-rank": doc_rank
-                            }
-                            yield id_, qa
+                        if turn["turn_id"] == int(dial["id"].split('_')[-1]):
+                            queries = list(reversed(all_prev_utterances))
+                            doc_ids = retriever_get_documents(None, queries)
+                            for doc_rank, (doc_domain, doc_id) in enumerate(doc_ids):
+                                question_str = " ".join(list(reversed(all_prev_utterances))).strip()
+                                question = " ".join(question_str.split()[:MAX_Q_LEN])
+                                id_ = "{}_{}".format(dial["id"], doc_rank) # For subtask1, the id should be this format.
+                                # id_ = "{}_{}".format(dial["id"], turn["turn_id"]) # For subtask1, the id should be this format.
+                                qa = {
+                                    "id": id_, # For subtask1, the id should be this format.
+                                    "title": doc_id,
+                                    "context": docs[doc_domain][doc_id]["doc_text"],
+                                    "only-question": turn["utterance"],    
+                                    "question": question,    
+                                    "domain": doc_domain,
+                                    "doc-rank": doc_rank
+                                }
+                                yield id_, qa
