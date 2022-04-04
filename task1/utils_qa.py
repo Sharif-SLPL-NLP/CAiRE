@@ -139,8 +139,10 @@ def get_best_answer_for_question_history(answers, questions, beta=1) -> str:
 
     Returns answer: Str
     """
+    if len(answers) == 1:
+        return answers[0]
     if isinstance(questions, str):
-        questions = [questions]
+        questions = [questions] #.split("$#@$")
     answer_sim = np.array(list(map(lambda x: 0.0, answers)))
     tfidf_sim = np.array(list(map(lambda x: 0.0, answers)))
 
@@ -178,6 +180,8 @@ def get_best_answer_for_question(answers, question, beta=1) -> str:
 
     Returns answer: Str
     """
+    if len(answers) == 1:
+        return answers[0]
     question_embd = get_embeddings(question)
     answers_embds = list(map(get_embeddings, answers))
     answer_sim = list(map(lambda x: np.dot(x, question_embd) /
@@ -251,7 +255,8 @@ def final_postprocess_qa_predictions(
             if GENERATIVE:
                 output[id] = summarize(predictions[id]["predictions"])
             else:
-                output[id] = get_best_answer_for_question(predictions[id]["predictions"], predictions[id]["question"])
+                output[id] = get_best_answer_for_question_history(predictions[id]["predictions"], predictions[id]["questions"])
+                # output[id] = get_best_answer_for_question(predictions[id]["predictions"], predictions[id]["question"])
             
     return output
 

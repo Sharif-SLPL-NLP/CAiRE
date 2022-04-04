@@ -447,7 +447,12 @@ class MultiDoc2dial(datasets.GeneratorBasedBuilder):
                     "doc-rank": datasets.Value("int32"),
                 }
             )
-        elif self.config.name == "multidoc2dial_rc_mddseen_dev":
+        elif self.config.name in [
+            "multidoc2dial_rc_mddseen_dev", 
+            "multidoc2dial_rc_mddseen_test", 
+            "multidoc2dial_rc_mddunseen_dev", 
+            "multidoc2dial_rc_mddunseen_test"
+        ]:
             features = datasets.Features(
                 {
                     "id": datasets.Value("string"),
@@ -457,42 +462,9 @@ class MultiDoc2dial(datasets.GeneratorBasedBuilder):
                     "question": datasets.Value("string"),
                     "domain": datasets.Value("string"),
                     "doc-rank": datasets.Value("int32"),
-                }
-            )
-        elif self.config.name == "multidoc2dial_rc_mddseen_test":
-            features = datasets.Features(
-                {
-                    "id": datasets.Value("string"),
-                    "title": datasets.Value("string"),
-                    "context": datasets.Value("string"),
-                    "only-question": datasets.Value("string"),
-                    "question": datasets.Value("string"),
-                    "domain": datasets.Value("string"),
-                    "doc-rank": datasets.Value("int32"),
-                }
-            )
-        elif self.config.name == "multidoc2dial_rc_mddunseen_dev":
-            features = datasets.Features(
-                {
-                    "id": datasets.Value("string"),
-                    "title": datasets.Value("string"),
-                    "context": datasets.Value("string"),
-                    "only-question": datasets.Value("string"),
-                    "question": datasets.Value("string"),
-                    "domain": datasets.Value("string"),
-                    "doc-rank": datasets.Value("int32"),
-                }
-            )
-        elif self.config.name == "multidoc2dial_rc_mddunseen_test":
-            features = datasets.Features(
-                {
-                    "id": datasets.Value("string"),
-                    "title": datasets.Value("string"),
-                    "context": datasets.Value("string"),
-                    "only-question": datasets.Value("string"),
-                    "question": datasets.Value("string"),
-                    "domain": datasets.Value("string"),
-                    "doc-rank": datasets.Value("int32"),
+                    "questions": [
+                        datasets.Value("string"),
+                    ]
                 }
             )
 
@@ -1105,13 +1077,16 @@ class MultiDoc2dial(datasets.GeneratorBasedBuilder):
                 for dial in dial_data:
                     all_prev_utterances = []
                     all_user_utterances = []
+                    all_utterances = []
                     for idx, turn in enumerate(dial["dial"]):
                         all_prev_utterances.append(
                             "\t{}: {}".format(turn["role"], turn["utterance"])
                         )
                         if turn["role"] == "agent":
+                            all_utterances[-1] = all_utterances[-1] + turn["utterance"]
                             continue
                         else:
+                            all_utterances.append(turn["utterance"])
                             all_user_utterances.append(turn["utterance"])
 
                         # queries = list(reversed(all_user_utterances))
@@ -1130,6 +1105,7 @@ class MultiDoc2dial(datasets.GeneratorBasedBuilder):
                                     "only-question": turn["utterance"],    
                                     "question": question,    
                                     "domain": doc_domain,
-                                    "doc-rank": doc_rank
+                                    "doc-rank": doc_rank,
+                                    "questions": list(reversed(all_utterances)),
                                 }
                                 yield id_, qa
