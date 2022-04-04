@@ -56,7 +56,7 @@ else:
 tfidfVectorizer = None
 tfidf_wm = None
 N_DOC = 488
-words2IDF = None
+words2IDF = {}
 
 def tfIDF_fitting(path2doc) -> None:
     global tfidfVectorizer, tfidf_wm, N_DOC
@@ -241,6 +241,7 @@ def final_postprocess_qa_predictions(
                 predictions[new_id] = {
                     "question": examples[index]["only-question"],
                     "predictions": [all_predictions[id]],
+                    "questions": examples[index]["questions"],
                 }
             else:
                 predictions[new_id]["predictions"].append(all_predictions[id])
